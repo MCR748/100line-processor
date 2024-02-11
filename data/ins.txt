@@ -1,0 +1,62 @@
+0x00000013          addi x0, x0, 0
+0x00402103          lw x2, 4(x0) 
+0x0000a0b7          lui x1, 10
+0x002081b3          add x3, x1, x2
+0x40208233          sub x4, x1, x2
+0x0020f2b3          and x5, x1, x2
+0x0020e333          or x6, x1, x2
+0x0020c3b3          xor x7, x1, x2
+0x0020d433          srl x8, x1, x2
+0x4020d4b3          sra x9, x1, x2
+0x0020a5b3          slt x11, x1, x2
+0x0020b633          sltu x12, x1, x2
+0x022086b3          mul x13, x1, x2
+0x0220c733          div x14, x1, x2
+0x00f08793          addi x15, x1, 15
+0x00f0f813          andi x16, x1, 15
+0x0100e893          ori x17, x1, 16
+0xfff14913          xori x18, x2, -1
+0x06409993          slli x19, x1, 100
+0x0640da13          srli x20, x1, 100
+0xfff00a93          addi x21, x0, -1
+0x464adb13          srai x22, x21, 100
+0x0640ab93          slti x23, x1, 100
+0xfff0bc13          sltiu x24, x1, -1
+0x00000463          beq x0, x0, 4
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00209463          bne x1, x2, 4
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x002b4463          blt x22, x2, 4
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x0020d463          bge x1, x2, 4
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x01616463          bltu x2, x22, 4
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x002b7463          bgeu x22, x2, 4
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x01202823          sw x18, 16(x0)
+0x00800cef          jal x25, 8
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0x00000013          addi x0, x0, 0
+0xf0c00d67          jalr x26, -244(x0)
+0x00000013          addi x0, x0, 0
