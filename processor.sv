@@ -5,10 +5,11 @@ module processor #(parameter WIDTH = 32) (
     input logic reset,
     output logic [WIDTH-1: 0] result        //Not required for functioning, for the sake of an output
 );
-    logic isBranchR, isBranchA;                  //Branch Result of is it a branching instruction and should branch
+    logic isBranchA, isBranchR;                  //Branch Result of is it a branching instruction and should branch
     logic isSrc2, isRegWriteE;
     logic [5-1: 0] rs1, rs2, rd, opcode;
     logic [3-1: 0] funct3;
+    logic [WIDTH-1: 0] instr;
     logic [7-1: 0] funct7;
     logic [8-1: 0] memIns [0 :256-1];
     logic [8-1: 0] memData [0 :256-1];
@@ -21,10 +22,8 @@ module processor #(parameter WIDTH = 32) (
     logic [WIDTH-1: 0] dataMemOut;
     logic isArithmetic, isImmediate, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL;
     logic [WIDTH-1: 0] imm, iImm, sImm, sbImm, uImm, jImm;
-    // verilator lint_off UNUSED
-    logic [WIDTH-1: 0] instr;   //Used to suppress warning of not using instr[1:0]
-    //  verilator lint_on UNUSED
-
+    logic [4-1: 0] aluControl = 4'b0;
+    
     //PC
     always_ff @(posedge clock) begin : PC
         pc <= (reset) ? 32'd0 : pcNext;
@@ -34,9 +33,7 @@ module processor #(parameter WIDTH = 32) (
     assign pcNext = (isBranchR | isJAL | isJALR) ? ( (isBranchR)? branchTarget : jumpTarget) : pcPlus4;
 
     //Instruction memory
-    initial begin
-        $readmemh("data/ins.dat", memIns);
-    end
+    initial $readmemh("data/ins.dat", memIns);
     assign instr = {memIns[pc+3], memIns[pc+2], memIns[pc+1], memIns[pc]};
 
     assign funct3 = instr[14:12];
@@ -47,7 +44,7 @@ module processor #(parameter WIDTH = 32) (
     assign opcode = instr [6:2];
 
     //Instruction decoder
-    assign isArithmetic = (opcode == 5'b01100) & (funct7 == 7'b00000_00);
+    assign isArithmetic = (opcode == 5'b01100) & (funct7[0] == 1'b0);
     assign isImmediate  = (opcode == 5'b00100);
     assign isLoadW      = (opcode == 5'b00000);
     assign isLoadUI     = (opcode == 5'b01101);
@@ -55,7 +52,7 @@ module processor #(parameter WIDTH = 32) (
     assign isBranch     = (opcode == 5'b11000);
     assign isJAL        = (opcode == 5'b11011);
     assign isJALR       = (opcode == 5'b11001);
-    assign isMUL        = (opcode == 5'b01100) & (funct7 == 7'b00000_01);     //For MUL and DIV
+    assign isMUL        = (opcode == 5'b01100) & (funct7[0] == 1'b1);     //For MUL and DIV
 
     //Immediate generation
     assign iImm    = {{21{instr[31]}}, instr[30:20]};                                 
@@ -64,26 +61,23 @@ module processor #(parameter WIDTH = 32) (
     assign uImm    = {instr[31:12],12'b0};                                            
     assign jImm    = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
     always_comb begin : ImmediateGeneration
-        case ({isArithmetic , isImmediate , isLoadW , isLoadUI , isStoreW , isBranch , isJAL , isJALR})
-            8'b1000_0000: imm = 32'd0;
-            8'b0100_0000: imm = iImm;
-            8'b0010_0000: imm = iImm;
-            8'b0001_0000: imm = uImm;
-            8'b0000_1000: imm = sImm;
-            8'b0000_0100: imm = sbImm;
-            8'b0000_0010: imm = jImm;
-            8'b0000_0001: imm = iImm;
+        case ({isImmediate , isLoadW , isLoadUI , isStoreW , isBranch , isJAL , isJALR})
+            7'b100_0000: imm = iImm;
+            7'b010_0000: imm = iImm;
+            7'b001_0000: imm = uImm;
+            7'b000_1000: imm = sImm;
+            7'b000_0100: imm = sbImm;
+            7'b000_0010: imm = jImm;
+            7'b000_0001: imm = iImm;
             default: imm = 32'd0;
         endcase
     end
 
-    assign branchTarget = pc + {imm[30:0],1'b0};
+    assign branchTarget = pc + {imm[31:1],1'b0};
     assign jumpTarget = pc + imm;
 
     //Registry
-    initial begin
-        $readmemh("data/registry.dat", registryFile);
-    end
+    initial $readmemh("data/registry.dat", registryFile);
     assign data_1 = (rs1 == 0) ? 0 : registryFile[rs1];
     assign data_2 = (rs2 == 0) ? 0 : registryFile[rs2];
     assign isRegWriteE = isArithmetic | isImmediate | isLoadW | isLoadUI | isJAL | isJALR;
@@ -96,38 +90,47 @@ module processor #(parameter WIDTH = 32) (
     assign src1 = data_1;
     assign src2 = (isSrc2) ? imm : data_2;
     always_comb begin : ALU
+        case (aluControl)
+            4'b0000 : aluOut = src1 + src2;  //Add
+            4'b1000 : aluOut = src1 - src2;  //Sub
+            4'b0001 : aluOut = src1 << src2[4:0];  //Sll
+            4'b0010 : aluOut = ($signed(src1) < $signed(src2) ? 32'd1 : 32'd0);  //Slt
+            4'b0011 : aluOut = (src1 < src2) ? 32'd1 : 32'd0;  //Sltu
+            4'b0100 : aluOut = src1 ^ src2;  //Xor
+            4'b0101 : aluOut = src1 >> src2;  //Srl
+            4'b1101 : aluOut = src1 >>> src2[4:0];  //Sra
+            4'b0110 : aluOut = src1 | src2; //Or
+            4'b0111 : aluOut = src1 & src2;  //And
+            4'b1001 : aluOut = src1 * src2;  //Mul
+            4'b1010 : aluOut = src1 / src2;   //Div
+            4'b1011 : aluOut = (src1 == src2) ? 32'd1 : 32'd0; //Equal
+            4'b1100 : aluOut = ($signed(src1) < $signed(src2) ? 32'd0 : 32'd1);   //BGE
+            4'b1110 : aluOut = (src1 < src2) ? 32'd0 : 32'd1;        //BGEU
+            4'b1111 : aluOut = src2;        //Passthrough
+            default:  aluOut = 32'd0;
+        endcase
+    end  
+    always_comb begin : ALUDecode
         if (isMUL) begin
-            case (funct3)
-                3'b000: aluOut = src1 * src2;
-                3'b100: aluOut = src1 / src2;
-                default: aluOut = 32'd0;
-            endcase
-        end else if (isArithmetic | isImmediate) begin
-            case (funct3)
-                3'b000: aluOut = (funct7 == 7'b0100000) ? (src1 - src2) : (src1 + src2);
-                3'b001: aluOut = src1 << src2[4:0];
-                3'b010: aluOut = ($signed(src1) < $signed(src2) ? 32'd1 : 32'd0); 
-                3'b011: aluOut = (src1 < src2) ? 32'd1 : 32'd0; 
-                3'b100: aluOut = src1 ^ src2;
-                3'b101: aluOut = (funct7[6:2] == 5'b01000) ? src1 >>> src2[4:0] : src1 >> src2;
-                3'b110: aluOut = src1 | src2;
-                3'b111: aluOut = src1 & src2;
-                default: aluOut = 32'd0;
-            endcase
+            aluControl = (funct3[2] ? 4'b1010 : 4'b1001);
+        end else if (isArithmetic) begin
+            aluControl = {funct7[5], funct3};
+        end else if (isImmediate) begin
+            aluControl = {1'b0, funct3};
         end else if (isLoadW | isStoreW) begin
-            aluOut = src1 + src2; 
+            aluControl = 4'b0000; 
         end else if (isBranch) begin
             case (funct3)
-                3'b000: aluOut = (src1 == src2) ? 32'd1 : 32'd0;                    //BEQ
-                3'b001: aluOut = src1 - src2;                                       //BNE
-                3'b100: aluOut = ($signed(src1) < $signed(src2) ? 32'd1 : 32'd0);   //BLT
-                3'b101: aluOut = ($signed(src1) < $signed(src2) ? 32'd0 : 32'd1);   //BGE
-                3'b110: aluOut = (src1 < src2) ? 32'd1 : 32'd0;
-                3'b111: aluOut =  (src1 < src2) ? 32'd0 : 32'd1;
-                default: aluOut = 32'h0;
+                3'b000:  aluControl = 4'b1011;   //BEQ
+                3'b001:  aluControl = 4'b1000;   //BNE
+                3'b100:  aluControl = 4'b0010;   //BLT
+                3'b101:  aluControl = 4'b1100;   //BGE
+                3'b110:  aluControl = 4'b0011;   //BLTU
+                3'b111:  aluControl = 4'b1110;   //BGEU
+                default: aluControl = 4'b1111;
             endcase
         end else begin
-            aluOut = 32'd0;
+            aluControl =  4'b1111;
         end
     end
 
@@ -136,9 +139,7 @@ module processor #(parameter WIDTH = 32) (
     assign isBranchA = |aluOut;
 
     //Data memory
-    initial begin
-        $readmemh("data/data.dat",memData);
-    end
+    initial $readmemh("data/data.dat",memData);
     always_ff @(posedge clock) begin : DataMemory
         if (isStoreW) begin
             memData[aluOut]   <= data_2[7:0];
