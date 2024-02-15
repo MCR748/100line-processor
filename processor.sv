@@ -9,9 +9,11 @@ module processor #(parameter WIDTH = 32) (
     logic isSrc2, isRegWriteE;
     logic [5-1: 0] rs1, rs2, rd, opcode;
     logic [3-1: 0] funct3;
+    /* verilator lint_off UNUSED */
     logic [WIDTH-1: 0] instr;
     logic [7-1: 0] funct7;
-    logic [8-1: 0] memIns [0 :256-1];
+    /* verilator lint_on UNUSED */
+    logic [WIDTH-1: 0] memIns [0 :512-1];
     logic [8-1: 0] memData [0 :256-1];
 
     logic [WIDTH-1:0] pc, pcPlus4, pcNext;
@@ -28,13 +30,13 @@ module processor #(parameter WIDTH = 32) (
     always_ff @(posedge clock) begin : PC
         pc <= (reset) ? 32'd0 : pcNext;
     end
-    assign pcPlus4 = pc + 32'd4;  
+    assign pcPlus4 = {pc[31:2], 2'b00} + 32'd4;  
     //Handling branching and jump
     assign pcNext = (isBranchR | isJAL | isJALR) ? ( (isBranchR)? branchTarget : jumpTarget) : pcPlus4;
 
     //Instruction memory
-    initial $readmemh("data/ins.dat", memIns);
-    assign instr = {memIns[pc+3], memIns[pc+2], memIns[pc+1], memIns[pc]};
+    initial $readmemh("data/data.dat", memIns);
+    assign instr = memIns[pc[10:2]];
 
     assign funct3 = instr[14:12];
     assign funct7 = instr[31:25];
