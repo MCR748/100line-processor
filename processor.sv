@@ -26,6 +26,8 @@ module processor #(parameter WIDTH = 32) (
     logic [WIDTH-1: 0] imm, iImm, sImm, sbImm, uImm, jImm;
     logic [4-1: 0] aluControl = 4'b0;
     
+
+
     //PC
     always_ff @(posedge clock) begin : PC
         pc <= (reset) ? 32'd0 : pcNext;
@@ -35,7 +37,7 @@ module processor #(parameter WIDTH = 32) (
     assign pcNext = (isBranchR | isJAL | isJALR) ? ( (isBranchR)? branchTarget : jumpTarget) : pcPlus4;
 
     //Instruction memory
-    initial $readmemh("data/data.dat", memIns);
+    initial $readmemh("tests/rv32ui-p-add.dump.dat", memIns);
     assign instr = memIns[pc[10:2]];
 
     assign funct3 = instr[14:12];
@@ -154,5 +156,5 @@ module processor #(parameter WIDTH = 32) (
     assign result = dataMemOut;     //Just to get an output
 
     //Writeback Mux
-    assign regData = (isJALR | isJAL) ? pc + 4 : ((isLoadW | isLoadUI ) ? dataMemOut : aluOut);     
+    assign regData = (isJALR | isJAL) ? pc + 4 : ((isLoadW) ? dataMemOut : aluOut);     
 endmodule
