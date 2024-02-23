@@ -80,7 +80,7 @@ module processor #(parameter WIDTH = 32) (
     end
 
     assign branchTarget = pc + {imm[31:1],1'b0};
-    assign jumpTarget = pc + imm;
+    assign jumpTarget = ((isJALR) ? data_1 : pc) + imm;
 
     //Registry
     initial $readmemh("data/registry.dat", registryFile);
