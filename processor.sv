@@ -22,7 +22,7 @@ module processor #(parameter WIDTH = 32) (
     logic [WIDTH - 1: 0] registryFile [0 :32-1];
     logic [WIDTH-1: 0] src1, src2, aluOut = 32'd0;
     logic [WIDTH-1: 0] dataMemOut;
-    logic isArithmetic, isImmediate, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL;
+    logic isArithmetic, isImmediate, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC;
     logic [WIDTH-1: 0] imm, iImm, sImm, sbImm, uImm, jImm;
     logic [4-1: 0] aluControl = 4'b0;
     
@@ -57,6 +57,7 @@ module processor #(parameter WIDTH = 32) (
     assign isJAL        = (opcode == 5'b11011);
     assign isJALR       = (opcode == 5'b11001);
     assign isMUL        = (opcode == 5'b01100) & (funct7[0] == 1'b1);     //For MUL and DIV
+    assign isAUIPC      = (opcode == 5'b00101);
 
     //Immediate generation
     assign iImm    = {{21{instr[31]}}, instr[30:20]};                                 
@@ -65,14 +66,15 @@ module processor #(parameter WIDTH = 32) (
     assign uImm    = {instr[31:12],12'b0};                                            
     assign jImm    = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
     always_comb begin : ImmediateGeneration
-        case ({isImmediate , isLoadW , isLoadUI , isStoreW , isBranch , isJAL , isJALR})
-            7'b100_0000: imm = iImm;
-            7'b010_0000: imm = iImm;
-            7'b001_0000: imm = uImm;
-            7'b000_1000: imm = sImm;
-            7'b000_0100: imm = sbImm;
-            7'b000_0010: imm = jImm;
-            7'b000_0001: imm = iImm;
+        case ({isImmediate , isLoadW , isLoadUI , isStoreW , isBranch , isJAL , isJALR, isAUIPC})
+            8'b1000_0000: imm = iImm;
+            8'b0100_0000: imm = iImm;
+            8'b0010_0000: imm = uImm;
+            8'b0001_0000: imm = sImm;
+            8'b0000_1000: imm = sbImm;
+            8'b0000_0100: imm = jImm;
+            8'b0000_0010: imm = iImm;
+            8'b0000_0001: imm = uImm;
             default: imm = 32'd0;
         endcase
     end
@@ -84,15 +86,15 @@ module processor #(parameter WIDTH = 32) (
     initial $readmemh("data/registry.dat", registryFile);
     assign data_1 = (rs1 == 0) ? 0 : registryFile[rs1];
     assign data_2 = (rs2 == 0) ? 0 : registryFile[rs2];
-    assign isRegWriteE = isArithmetic | isImmediate | isLoadW | isLoadUI | isJAL | isJALR;
+    assign isRegWriteE = isArithmetic | isImmediate | isLoadW | isLoadUI | isJAL | isJALR | isAUIPC;
     always_ff @(posedge clock) begin : RegistryFile
          if (isRegWriteE) registryFile[rd] <= regData;
     end
 
     //ALU
-    assign isSrc2 = isImmediate | isLoadW | isLoadUI | isJAL | isJALR | isStoreW; 
-    assign src1 = data_1;
-    assign src2 = (isSrc2) ? imm : data_2;
+    assign isSrc2 = isImmediate | isLoadW | isLoadUI | isJAL | isJALR | isStoreW | isAUIPC;
+    assign src1 = (isAUIPC) ? pc : data_1;
+    assign src2 = (isSrc2)  ? imm : data_2;
     always_comb begin : ALU
         case (aluControl)
             4'b0000 : aluOut = src1 + src2;  //Add
@@ -133,6 +135,8 @@ module processor #(parameter WIDTH = 32) (
                 3'b111:  aluControl = 4'b1110;   //BGEU
                 default: aluControl = 4'b1111;
             endcase
+        end else if (isAUIPC) begin
+            aluControl = 4'b0000;   //Can put with load and store            
         end else begin
             aluControl =  4'b1111;
         end
