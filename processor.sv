@@ -97,7 +97,9 @@ module processor #(parameter WIDTH = 32) (
             4'b0011 : aluOut = (src1 < src2) ? 32'd1 : 32'd0;  //Sltu
             4'b0100 : aluOut = src1 ^ src2;  //Xor
             4'b0101 : aluOut = src1 >> src2[4:0];  //Srl
-            4'b1101 : aluOut = src1 >>> src2[4:0];  //Sra
+            /* verilator lint_off WIDTH */
+            4'b1101 : aluOut =  {{31{src1[31]}}, src1} >> src2[4:0];  //Sra, normal operation >>> didn't work
+            /* verilator lint_on UNUSED */
             4'b0110 : aluOut = src1 | src2;  //Or
             4'b0111 : aluOut = src1 & src2;  //And
             4'b1001 : aluOut = src1 * src2;  //Mul
@@ -112,7 +114,7 @@ module processor #(parameter WIDTH = 32) (
         end else if (isArithmetic) begin
             aluOp = {funct7[5], funct3};
         end else if (isImmediate) begin
-            aluOp = {1'b0, funct3};
+            aluOp = ({funct3 == 3'b101}) ? {funct7[5], funct3} : {1'b0, funct3}; //Fro SRAI and SRLI
         end else if (isAUIPC | isJAL | isJALR | isBranch | isLoadW | isStoreW) begin
             aluOp = 4'b0000;   //Can put with load and store            
         end else begin
