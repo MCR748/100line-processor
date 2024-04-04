@@ -1,0 +1,24 @@
+name: Build and Test Workflow
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Verilator
+      run: |
+        sudo apt-get install -y verilator
+
+    - name: Install Make
+      run: |
+        sudo apt-get install -y make
+
+    - name: Run all standard simulation
+      run: make waveform.vcd
