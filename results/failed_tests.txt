@@ -1,0 +1,2 @@
+tests/rv32ui-p-lw.dump.dat
+Test failed at: 2

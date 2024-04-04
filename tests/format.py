@@ -3,7 +3,7 @@ import os
 
 
 
-folder_path = "/media/Education/Project-self/Comp-arch-course/100linev2/tests"
+folder_path = "/media/Education/Project-self/Comp-arch-course/100linev3/tests"
 for file_name in os.listdir(folder_path):
     #print(file_name)
     file_extension = os.path.splitext(file_name)[1][1:]
@@ -16,12 +16,10 @@ for file_name in os.listdir(folder_path):
 
                 # Check if the line has at least 9 characters and the 9th byte is ":"
                 if len(line) > 8 and line[8] == ':':
-                    count += 1
+                    count += 1;
+                    instr = "00000013" + "\n";
                     if count > 396 /4:
                         instr = line[10:18] + "\n"
-                        #The pass condition
-                        if line[10:18] == "c0001073":
-                            break
-
+                        #To write NOP to rest of instruction, shift left by 1 tab
                         f_out.write(instr)
                     

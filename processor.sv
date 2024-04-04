@@ -3,7 +3,15 @@
 module processor #(parameter WIDTH = 32) (
     input logic clock,
     input logic reset,
-    output logic [WIDTH-1: 0] result        //Not required for functioning, for the sake of an output
+    input logic insMemEn,
+    input logic [WIDTH-1: 0] insMemData, 
+    /* verilator lint_off UNUSED */
+    input logic [WIDTH-1: 0]insMemAddr,
+    /* verilator lint_on UNUSED */
+    output logic [WIDTH-1: 0] result,        //Not required for functioning, for the sake of an output
+    //verifying
+    output logic [WIDTH-1: 0] gp,
+    output logic [WIDTH-1: 0] a7
 );
     logic isBranchC, isBranchR;                  //Branch Result of is it a branching instruction and should branch
     logic isSrc2, regWrite;
@@ -25,6 +33,7 @@ module processor #(parameter WIDTH = 32) (
     logic [WIDTH-1: 0] imm, iImm, sImm, sbImm, uImm, jImm;
     logic [4-1: 0] aluOp = 4'b0;
     
+    //PC
     always_ff @(posedge clock) begin : PC
         pc <= (reset) ? 32'd0 : pcNext;
     end
@@ -33,8 +42,11 @@ module processor #(parameter WIDTH = 32) (
     assign pcNext = (isJAL | isJALR  | isBranchR) ? aluOut : pcPlus4;
 
     //Instruction memory
-    initial $readmemh("data/ins.dat", instructionMemory);
-    assign instruction = instructionMemory[pc[10:2]];
+    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", instructionMemory);
+    always_ff @(posedge clock) begin : InstructionMemory
+        instructionMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : instructionMemory[insMemAddr[8:0]] ;
+    end
+    assign instruction = (~insMemEn) ? instructionMemory[pc[10:2]] : 32'h00000013;
 
     assign funct3 = instruction[14:12];
     assign funct7 = instruction[31:25];
@@ -76,7 +88,7 @@ module processor #(parameter WIDTH = 32) (
     end
 
     //Registry
-    initial $readmemh("data/registry.dat", registers);
+    //initial $readmemh("data/registry.dat", registers);
     assign data_1 = (rs1 == 0) ? 0 : registers[rs1];
     assign data_2 = (rs2 == 0) ? 0 : registers[rs2];
     assign regWrite = isArithmetic | isImmediate | isLoadW | isLoadUI | isJAL | isJALR | isAUIPC;
@@ -112,13 +124,15 @@ module processor #(parameter WIDTH = 32) (
         end else if (isArithmetic) begin
             aluOp = {funct7[5], funct3};
         end else if (isImmediate) begin
-            aluOp = ({funct3 == 3'b101}) ? {funct7[5], funct3} : {1'b0, funct3}; //Fro SRAI and SRLI
+             aluOp = ({funct3 == 3'b101}) ? {funct7[5], funct3} : {1'b0, funct3};
         end else if (isAUIPC | isJAL | isJALR | isBranch | isLoadW | isStoreW) begin
             aluOp = 4'b0000;   //Can put with load and store            
         end else begin
             aluOp =  4'b1111;
         end
     end
+    //SRA
+
 
     //Branch decision
     always_comb begin : BranchComparator
@@ -132,7 +146,7 @@ module processor #(parameter WIDTH = 32) (
     assign isBranchR = isBranchC & isBranch;    //isBranch is from decoding of instruction
 
     //Data memory
-    initial $readmemh("data/data.dat",dataMemory);
+    //initial $readmemh("data/data.dat",dataMemory);
     always_ff @(posedge clock) begin : DataMemory
         if (isStoreW) begin
             dataMemory[aluOut]   <= data_2[7:0];
@@ -145,5 +159,9 @@ module processor #(parameter WIDTH = 32) (
     assign result = dataMemOut;     //Just to get an output
 
     //Writeback Mux
-    assign regData = (isJALR | isJAL) ? pc + 4 : ((isLoadW) ? dataMemOut : aluOut);  
+    assign regData = (isJALR | isJAL) ? pc + 4 : ((isLoadW) ? dataMemOut : aluOut);
+
+    //verifying
+    assign gp = registers[3];
+    assign a7 = registers[17];   
 endmodule
