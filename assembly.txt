@@ -1,0 +1,13 @@
+addi s1, zero, 0			#i = 0
+addi t2, zero, 200			#t2 = 200
+
+$for_n  bge s1, t2, $done	#if i >= 200 then done
+		slli t0, s1, 2		#t0 = i*4
+		add t0, t0, s0		#address of scores[i]
+		lw t1, 0(t0)		#t1 = score[i]
+		addi t1, t1, 10		#t1 = score[i] + 10
+		sw t1, 0(t0)        #scores[i] = t1
+		addi s1, s1, 1      #i = i+1
+		bne s1, t2, $for_n	#if i != 200 then for
+		
+$done   addi s1, zero, 0    #something need to done to this!
