@@ -1,4 +1,4 @@
-`default_nettype none
+//`default_nettype none
 
 module processor #(parameter WIDTH = 32) (
     input logic clock,

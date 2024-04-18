@@ -15,9 +15,9 @@ module tb_processor;
     processor #(.WIDTH(WIDTH)) dut (.*);
 
     //Testbench variables
-    bit [WIDTH-1:0] pc, pc_next, testing_immediate;
+    bit [WIDTH-1:0] pc, pc_next, testing_immediate, prev_pc;
     bit [WIDTH-1:0] register_file [0:31];
-    bit [WIDTH-1:0] testing_instruction;
+    bit [WIDTH-1:0] testing_instruction, prev_testing_instruction;
     bit [4:0] testing_rs1, testing_rs2, testing_rd;
     Random_Num #(.WIDTH(WIDTH)) inital_reg_val = new();
     
@@ -34,10 +34,10 @@ module tb_processor;
             dut.registers[i] = inital_reg_val.num;
         end 
 
-        for (int i = 0; i<34 ; i++) begin
-            @(posedge clock);
-            dut.instructionMemory[i] = instr_constr(i);
-        end
+        // for (int i = 0; i<34 ; i++) begin
+        //     @(posedge clock);
+        //     dut.instructionMemory[i] = instr_constr(i);
+        // end
 
         
         //To start the processor
@@ -47,102 +47,114 @@ module tb_processor;
         #1 reset = 0;
 
         //Run the emulation here
-        pc = pc_next;
-        testing_instruction = dut.instructionMemory[pc[10:2]];
-        testing_rs1 = testing_instruction[19:15];
-        testing_rs2 = testing_instruction[24:20];
-        testing_rd = testing_rd;
-        case (testing_instruction[6:2])
-            5'b01100: begin     //Arithmetic
-                pc_next = pc + 32'd4;
-                if (testing_instruction[25]) begin //MUL and DIV
-                    bit [WIDTH-1:0] mul = testing_rs1 * testing_rs2;
-                    bit [WIDTH-1:0] div = testing_rs1 / testing_rs2; 
-                    register_file[testing_rd] = (testing_instruction[14:12] == 3'b000 ? mul : register_file[testing_rd]);                    
-                    register_file[testing_rd] = (testing_instruction[14:12] == 3'b100 ? div : register_file[testing_rd]);
-                end else begin
-                    case ({testing_instruction[30],testing_instruction[14:12]})
-                        4'b0000 : register_file[testing_rd] = testing_rs1 + testing_rs2;  //Add
-                        4'b1000 : register_file[testing_rd] = testing_rs1 - testing_rs2;  //Sub
-                        4'b0001 : register_file[testing_rd] = testing_rs1 << testing_rs2[4:0];  //Sll
-                        4'b0010 : register_file[testing_rd] = ($signed(testing_rs1) < $signed(testing_rs2) ? 32'd1 : 32'd0);  //Slt
-                        4'b0011 : register_file[testing_rd] = (testing_rs1 < testing_rs2) ? 32'd1 : 32'd0;  //Sltu
-                        4'b0100 : register_file[testing_rd] = testing_rs1 ^ testing_rs2;  //Xor
-                        4'b0101 : register_file[testing_rd] = testing_rs1 >> testing_rs2[4:0];  //Srl
-                        4'b1101 : register_file[testing_rd] =  $signed(testing_rs1) >>> testing_rs2[4:0];  //Sra
-                        4'b0110 : register_file[testing_rd] = testing_rs1 | testing_rs2;  //Or
-                        4'b0111 : register_file[testing_rd] = testing_rs1 & testing_rs2;  //And 
+        for (int i = 0; i < 10000 ; i++) begin
+            pc = i*4;
+            //testing_instruction = dut.instructionMemory[pc[10:2]];
+            testing_instruction = instr_constr ({$random}%33);
+            @(posedge clock);
+            dut.instruction = testing_instruction;
+            result = instr_execute(prev_testing_instruction, register_file, prev_pc ,pc_next);
+            if (result) begin
+                $error("The instruction %0x failed", prev_testing_instruction);
+                break;
+            end
+
+            testing_rs1 = testing_instruction[19:15];
+            testing_rs2 = testing_instruction[24:20];
+            testing_rd = testing_rd;
+            case (testing_instruction[6:2])
+                5'b01100: begin     //Arithmetic
+                    pc_next = pc + 32'd4;
+                    if (testing_instruction[25]) begin //MUL and DIV
+                        bit [WIDTH-1:0] mul = testing_rs1 * testing_rs2;
+                        bit [WIDTH-1:0] div = testing_rs1 / testing_rs2; 
+                        register_file[testing_rd] = (testing_instruction[14:12] == 3'b000 ? mul : register_file[testing_rd]);                    
+                        register_file[testing_rd] = (testing_instruction[14:12] == 3'b100 ? div : register_file[testing_rd]);
+                    end else begin
+                        case ({testing_instruction[30],testing_instruction[14:12]})
+                            4'b0000 : register_file[testing_rd] = testing_rs1 + testing_rs2;  //Add
+                            4'b1000 : register_file[testing_rd] = testing_rs1 - testing_rs2;  //Sub
+                            4'b0001 : register_file[testing_rd] = testing_rs1 << testing_rs2[4:0];  //Sll
+                            4'b0010 : register_file[testing_rd] = ($signed(testing_rs1) < $signed(testing_rs2) ? 32'd1 : 32'd0);  //Slt
+                            4'b0011 : register_file[testing_rd] = (testing_rs1 < testing_rs2) ? 32'd1 : 32'd0;  //Sltu
+                            4'b0100 : register_file[testing_rd] = testing_rs1 ^ testing_rs2;  //Xor
+                            4'b0101 : register_file[testing_rd] = testing_rs1 >> testing_rs2[4:0];  //Srl
+                            4'b1101 : register_file[testing_rd] =  $signed(testing_rs1) >>> testing_rs2[4:0];  //Sra
+                            4'b0110 : register_file[testing_rd] = testing_rs1 | testing_rs2;  //Or
+                            4'b0111 : register_file[testing_rd] = testing_rs1 & testing_rs2;  //And 
+                            default: register_file[testing_rd] = register_file[testing_rd];
+                        endcase
+                    end
+                end 
+                5'b00100: begin     //Immediate
+                    pc_next = pc + 32'd4;
+                    testing_immediate = {{21{testing_instruction[31]}}, testing_instruction[30:20]};
+                    case (testing_instruction[14:12])
+                        3'b000 : register_file[testing_rd] = testing_immediate + testing_rs2;  //Add
+                        3'b001 : register_file[testing_rd] = testing_immediate << testing_rs2[4:0];  //Sll
+                        3'b010 : register_file[testing_rd] = ($signed(testing_immediate) < $signed(testing_rs2) ? 32'd1 : 32'd0);  //Slt
+                        3'b011 : register_file[testing_rd] = (testing_immediate < testing_rs2) ? 32'd1 : 32'd0;  //Sltu
+                        3'b100 : register_file[testing_rd] = testing_immediate ^ testing_rs2;  //Xor
+                        3'b101 : register_file[testing_rd] = testing_instruction[30] ? $signed(testing_immediate) >>> testing_rs2[4:0] : testing_immediate >> testing_rs2[4:0];  //Srl
+                        3'b110 : register_file[testing_rd] = testing_immediate | testing_rs2;  //Or
+                        3'b111 : register_file[testing_rd] = testing_immediate & testing_rs2;  //And 
                         default: register_file[testing_rd] = register_file[testing_rd];
                     endcase
                 end
-            end 
-            5'b00100: begin     //Immediate
-                pc_next = pc + 32'd4;
-                testing_immediate = {{21{testing_instruction[31]}}, testing_instruction[30:20]};
-                case (testing_instruction[14:12])
-                    3'b000 : register_file[testing_rd] = testing_immediate + testing_rs2;  //Add
-                    3'b001 : register_file[testing_rd] = testing_immediate << testing_rs2[4:0];  //Sll
-                    3'b010 : register_file[testing_rd] = ($signed(testing_immediate) < $signed(testing_rs2) ? 32'd1 : 32'd0);  //Slt
-                    3'b011 : register_file[testing_rd] = (testing_immediate < testing_rs2) ? 32'd1 : 32'd0;  //Sltu
-                    3'b100 : register_file[testing_rd] = testing_immediate ^ testing_rs2;  //Xor
-                    3'b101 : register_file[testing_rd] = testing_instruction[30] ? $signed(testing_immediate) >>> testing_rs2[4:0] : testing_immediate >> testing_rs2[4:0];  //Srl
-                    3'b110 : register_file[testing_rd] = testing_immediate | testing_rs2;  //Or
-                    3'b111 : register_file[testing_rd] = testing_immediate & testing_rs2;  //And 
-                    default: register_file[testing_rd] = register_file[testing_rd];
-                endcase
-            end
-            5'b00000 : begin    //Load
-                pc_next = pc + 32'd4;
-                testing_immediate = {{21{testing_instruction[31]}}, testing_instruction[30:20]};
-                if (testing_instruction[14:12] == 3'b010) begin
-                    register_file[testing_instruction[11:7]] = {dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]]],
-                                                            dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]] + 1],
-                                                            dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]] + 2],
-                                                            dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]] + 3]};
-                end
-            end 
-            5'b01101 : begin    //LUI
-                pc_next = pc + 32'd4;
-                testing_immediate = {testing_instruction[31:12],12'b0}; 
-                register_file[testing_rd] = testing_immediate;  
-            end 
-            5'b01000 : begin    //Store
-                pc_next = pc + 32'd4;
-                testing_immediate = {{21{testing_instruction[31]}},testing_instruction[30:25],testing_instruction[11:7]};  
-            end 
-            5'b11000 : begin    //Branch
-                testing_immediate = {{20{testing_instruction[31]}},testing_instruction[7],testing_instruction[30:25],testing_instruction[11:8],1'b0};  
-                case (testing_instruction[14:12])
-                    3'b000: pc_next = (register_file[testing_instruction[19:15]] == register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4;
-                    3'b001: pc_next = (register_file[testing_instruction[19:15]] != register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4; 
-                    3'b100: pc_next = (register_file[testing_instruction[19:15]] < register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4;
-                    3'b101: pc_next = (register_file[testing_instruction[19:15]] >= register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4;
-                    3'b110: pc_next = ($signed(register_file[testing_instruction[19:15]]) < $signed(register_file[testing_instruction[24:20]])) ? pc + testing_immediate : pc + 4;
-                    3'b111: pc_next = ($signed(register_file[testing_instruction[19:15]]) >= $signed(register_file[testing_instruction[24:20]])) ? pc + testing_immediate : pc + 4;
-                    default: pc_next = pc + 4;
-                endcase     
-            end 
-            5'b11011 : begin    //JAL
-                register_file[testing_instruction[11:7]] = pc + 32'd4;
-                testing_immediate = {{12{testing_instruction[31]}}, testing_instruction[19:12], testing_instruction[20], testing_instruction[30:21], 1'b0};
-                pc_next = pc + testing_immediate;
-            end 
-            5'b11001 : begin    //JALR
-                register_file[testing_instruction[11:7]] = pc + 32'd4;
-                testing_immediate = {testing_instruction[31:12],12'b0}; 
-                pc_next = register_file[testing_instruction[19:15]]  + testing_immediate;
-            end 
-            5'b00101 : begin    //AUIPC
-                pc_next = pc + 32'd4;
-                testing_immediate = {{12{testing_instruction[31]}}, testing_instruction[19:12], testing_instruction[20], testing_instruction[30:21], 1'b0};
-                register_file[testing_instruction[11:7]] = pc + testing_immediate;
-                
-            end 
-            default: register_file[testing_rd] = register_file[testing_rd];
-        endcase
-        
-    result = instr_execute(testing_instruction, register_file, pc ,pc_next);
-        
+                5'b00000 : begin    //Load
+                    pc_next = pc + 32'd4;
+                    testing_immediate = {{21{testing_instruction[31]}}, testing_instruction[30:20]};
+                    if (testing_instruction[14:12] == 3'b010) begin
+                        register_file[testing_instruction[11:7]] = {dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]]],
+                                                                dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]] + 1],
+                                                                dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]] + 2],
+                                                                dut.dataMemory[testing_immediate + register_file[testing_instruction[19:15]] + 3]};
+                    end
+                end 
+                5'b01101 : begin    //LUI
+                    pc_next = pc + 32'd4;
+                    testing_immediate = {testing_instruction[31:12],12'b0}; 
+                    register_file[testing_rd] = testing_immediate;  
+                end 
+                5'b01000 : begin    //Store
+                    pc_next = pc + 32'd4;
+                    testing_immediate = {{21{testing_instruction[31]}},testing_instruction[30:25],testing_instruction[11:7]};  
+                end 
+                5'b11000 : begin    //Branch
+                    testing_immediate = {{20{testing_instruction[31]}},testing_instruction[7],testing_instruction[30:25],testing_instruction[11:8],1'b0};  
+                    case (testing_instruction[14:12])
+                        3'b000: pc_next = (register_file[testing_instruction[19:15]] == register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4;
+                        3'b001: pc_next = (register_file[testing_instruction[19:15]] != register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4; 
+                        3'b100: pc_next = (register_file[testing_instruction[19:15]] < register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4;
+                        3'b101: pc_next = (register_file[testing_instruction[19:15]] >= register_file[testing_instruction[24:20]]) ? pc + testing_immediate : pc + 4;
+                        3'b110: pc_next = ($signed(register_file[testing_instruction[19:15]]) < $signed(register_file[testing_instruction[24:20]])) ? pc + testing_immediate : pc + 4;
+                        3'b111: pc_next = ($signed(register_file[testing_instruction[19:15]]) >= $signed(register_file[testing_instruction[24:20]])) ? pc + testing_immediate : pc + 4;
+                        default: pc_next = pc + 4;
+                    endcase     
+                end 
+                5'b11011 : begin    //JAL
+                    register_file[testing_instruction[11:7]] = pc + 32'd4;
+                    testing_immediate = {{12{testing_instruction[31]}}, testing_instruction[19:12], testing_instruction[20], testing_instruction[30:21], 1'b0};
+                    pc_next = pc + testing_immediate;
+                end 
+                5'b11001 : begin    //JALR
+                    register_file[testing_instruction[11:7]] = pc + 32'd4;
+                    testing_immediate = {testing_instruction[31:12],12'b0}; 
+                    pc_next = register_file[testing_instruction[19:15]]  + testing_immediate;
+                end 
+                5'b00101 : begin    //AUIPC
+                    pc_next = pc + 32'd4;
+                    testing_immediate = {{12{testing_instruction[31]}}, testing_instruction[19:12], testing_instruction[20], testing_instruction[30:21], 1'b0};
+                    register_file[testing_instruction[11:7]] = pc + testing_immediate;
+
+                end 
+                default: register_file[testing_rd] = register_file[testing_rd];
+            endcase
+            prev_testing_instruction = testing_instruction;
+            prev_pc = pc;
+
+        end
+        $finish;
     end
 
     //Setting a function to provide a given testing_instruction according to the number given in

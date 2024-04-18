@@ -31,6 +31,9 @@ waveform.vcd: ./obj_dir/V$(MODULE)
 	verilator -Wall --trace --x-assign unique --x-initial unique -cc $(MODULE).sv --exe tb_$(MODULE).cpp
 	@touch .stamp.verilate
 
+	# cmd = f'{SIM_PATH}verilator --binary -j 0 -O3 --trace --relative-includes --top {self.TB_MODULE} -I../ -F ../sources.txt -CFLAGS -I../ {self.MODULE_DIR}/c/sim.c --Mdir ./'
+	# ./V{self.TB_MODULE}
+
 .PHONY:lint
 lint: $(MODULE).v
 	verilator --lint-only $(MODULE).v
