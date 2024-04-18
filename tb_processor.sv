@@ -33,13 +33,7 @@ module tb_processor;
             register_file[i] = inital_reg_val.num;
             dut.registers[i] = inital_reg_val.num;
         end 
-
-        // for (int i = 0; i<34 ; i++) begin
-        //     @(posedge clock);
-        //     dut.instructionMemory[i] = instr_constr(i);
-        // end
-
-        
+       
         //To start the processor
         @(posedge clock);
         #1 reset = 1;
@@ -50,7 +44,7 @@ module tb_processor;
         for (int i = 0; i < 10000 ; i++) begin
             pc = i*4;
             //testing_instruction = dut.instructionMemory[pc[10:2]];
-            testing_instruction = instr_constr ({$random}%33);
+            testing_instruction = instr_constr({$random}%33);
             @(posedge clock);
             dut.instruction = testing_instruction;
             result = instr_execute(prev_testing_instruction, register_file, prev_pc ,pc_next);
@@ -66,10 +60,8 @@ module tb_processor;
                 5'b01100: begin     //Arithmetic
                     pc_next = pc + 32'd4;
                     if (testing_instruction[25]) begin //MUL and DIV
-                        bit [WIDTH-1:0] mul = testing_rs1 * testing_rs2;
-                        bit [WIDTH-1:0] div = testing_rs1 / testing_rs2; 
-                        register_file[testing_rd] = (testing_instruction[14:12] == 3'b000 ? mul : register_file[testing_rd]);                    
-                        register_file[testing_rd] = (testing_instruction[14:12] == 3'b100 ? div : register_file[testing_rd]);
+                        register_file[testing_rd] = (testing_instruction[14:12] == 3'b000 ? testing_rs1 * testing_rs2 : register_file[testing_rd]);                    
+                        register_file[testing_rd] = (testing_instruction[14:12] == 3'b100 ? testing_rs1 / testing_rs2 : register_file[testing_rd]);
                     end else begin
                         case ({testing_instruction[30],testing_instruction[14:12]})
                             4'b0000 : register_file[testing_rd] = testing_rs1 + testing_rs2;  //Add
@@ -158,8 +150,10 @@ module tb_processor;
     end
 
     //Setting a function to provide a given testing_instruction according to the number given in
-    function bit [WIDTH-1:0] instr_constr (int i);
+    function automatic bit [WIDTH-1:0] instr_constr;
+        input integer i;
         bit [WIDTH-1:0] testing_instruction [0:33];
+        bit [WIDTH-1:0] return_instruction;
         //Define the testing_instruction array
         //In the order of Arithmetic, Immediate, LoadUI, Load,
         // Store, Branch, Jal, Jalr, AUIPC
@@ -220,15 +214,16 @@ module tb_processor;
         testing_instruction[31] = {{{u_imm.num[20]}},{{u_imm.num[10:1]}},{{u_imm.num[11]}},{{u_imm.num[19:12]}},{rd.num},{opcode[6]},2'b11}; //Jal
         testing_instruction[32] = {{i_imm.num},{rs1.num},3'b000,{rd.num},{opcode[7]},2'b11};   //Jalr
         testing_instruction[33] = {{u_imm.num},                 {rd.num},{opcode[2]},2'b11};   //AUIPC
-        instr_constr = testing_instruction[i];
-        //return testing_instruction[i];            
+
+        // instr_constr = testing_instruction[i];
+        return_instruction = testing_instruction[i];
+        return return_instruction;
     endfunction
     
 
     //Setting a function to verify the operation
     //Will give the output 1'b1 if testing_instruction verified, else 1'b0
-    // TODO Check if branching is enough
-    function bit instr_execute;
+    function automatic bit instr_execute;
         input bit [WIDTH-1:0] instr;
         input bit [WIDTH-1:0] registers [0:31];     //Pass dut.registerfile
         input bit [WIDTH-1:0] testing_pc;           //Pass dut.pc
