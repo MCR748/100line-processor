@@ -42,7 +42,8 @@ registers = ['ZERO','RA','SP','GP','TP','T0','T1','T2','S0','S1','A0','A1','A2',
 Setup
 '''
 in_filename = sys.argv[1]
-out_filename = in_filename.replace('assembly', 'mcode')
+#out_filename = in_filename.replace('assembly', 'mcode')
+out_filename = 'input.dat'
 
 input_lines = []
 with open(in_filename, "r") as f:
@@ -134,8 +135,7 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
         
         if opcode in ['ADDI','ANDI','ORI','XORI','SLTI','SLTIU']:
             opcode_bits = opcodes[opcode][0]
@@ -148,8 +148,7 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+           
             
         if opcode in ['SLLI', 'SRLI', 'SRAI']:
             opcode_bits = opcodes[opcode][0]
@@ -164,8 +163,7 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
 
         #from here onwards changes need to be done
         if opcode in ['BEQ', 'BNE','BLT','BGE','BLTU','BGEU']:
@@ -188,8 +186,7 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{imm[8:12]+imm[1]}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
 
 
         if opcode =='SW':
@@ -204,8 +201,7 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{imm[7:]}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
 
         if opcode == 'LW':
             opcode_bits = opcodes[opcode][0]
@@ -217,8 +213,7 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
 
         if opcode == 'LUI':
             opcode_bits = opcodes[opcode][0]
@@ -228,8 +223,7 @@ with open(out_filename, "w") as f:
             binary += f"{imm}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
             
         if opcode == 'AUIPC':
             opcode_bits = opcodes[opcode][0]
@@ -239,8 +233,7 @@ with open(out_filename, "w") as f:
             binary += f"{imm}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
         
         if opcode == 'JAL':
             opcode_bits = opcodes[opcode][0]
@@ -250,8 +243,7 @@ with open(out_filename, "w") as f:
             binary += f"{imm[0]+imm[10:20]+imm[9]+imm[1:9]}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
+            
             
         if opcode in ['JALR']:
             opcode_bits = opcodes[opcode][0]
@@ -264,8 +256,10 @@ with open(out_filename, "w") as f:
             binary += f"{funct3}"
             binary += f"{registers.index(operands[0]):05b}"
             binary += opcode_bits
-            formatted_string = ' '.join(binary[i:i+4] for i in range(0, len(binary), 4))
-            print(formatted_string)
             
-        f.write(formatted_string + '\n')
+        
+        decimal_int = int(binary, 2)
+        hex_str = '0x{:08x}'.format(decimal_int)
+        print(hex_str)
+        f.write(hex_str[2:] + '\n')
         
