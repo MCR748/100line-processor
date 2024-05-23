@@ -1,167 +1,119 @@
 //`default_nettype none
 
-module processor #(parameter WIDTH = 32) (
-    input logic clock,
-    input logic reset,
-    input logic insMemEn,
-    input logic [WIDTH-1: 0] insMemData, 
-    /* verilator lint_off UNUSED */
-    input logic [WIDTH-1: 0]insMemAddr,
-    /* verilator lint_on UNUSED */
-    output logic [WIDTH-1: 0] result,        //Not required for functioning, for the sake of an output
-    //verifying
-    output logic [WIDTH-1: 0] gp,
-    output logic [WIDTH-1: 0] a7
+module processor #(
+    WIDTH = 32, IMEM_DEPTH=512, DMEM_DEPTH=32, NUM_REGS=32
+)(
+    input  logic clock, reset, insMemEn,
+    input  logic [WIDTH-1:0] insMemData, insMemAddr,
+    output logic [WIDTH-1:0] gp, a7, dataMemOut //verifying
 );
-    logic isBranchC, isBranchR;                  //Branch Result of is it a branching instruction and should branch
-    logic isSrc2, regWrite;
-    logic [5-1: 0] rs1, rs2, rd, opcode;
-    logic [3-1: 0] funct3;
-    /* verilator lint_off UNUSED */
-    logic [WIDTH-1: 0] instruction;
-    logic [7-1: 0] funct7;
-    /* verilator lint_on UNUSED */
-    logic [WIDTH-1: 0] instructionMemory [0 :512-1];
-    logic [8-1: 0] dataMemory [0 :256-1];
+    logic [DMEM_DEPTH-1:0][WIDTH-1:0] dataMemory;
+    logic [IMEM_DEPTH-1:0][WIDTH-1:0] insMemory ;
+    logic [NUM_REGS  -1:0][WIDTH-1:0] registers ;
 
-    logic [WIDTH-1:0] pc, pcPlus4, pcNext;
-    logic [WIDTH-1: 0] data_1, data_2, regData;
-    logic [WIDTH - 1: 0] registers [0 :32-1];
-    logic [WIDTH-1: 0] src1, src2, aluOut = 32'd0;
-    logic [WIDTH-1: 0] dataMemOut;
+    logic [3:0] aluOp;
+    logic [4:0] rs1, rs2, rd, opcode;
+    logic [2:0] funct3;
+    logic [6:0] funct7;
+    logic [WIDTH-1:0] ins, imm, iImm, sImm, sbImm, uImm, jImm, pc, pcPlus4, data_1, data_2, regData, src1, src2, aluOut;
+    logic isBranchC, isBranchR, regWrite; //Branch Result of is it a branching instruction and should branch
     logic isArithmetic, isImmediate, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC;
-    logic [WIDTH-1: 0] imm, iImm, sImm, sbImm, uImm, jImm;
-    logic [4-1: 0] aluOp = 4'b0;
     
     //PC
-    always_ff @(posedge clock) begin : PC
-        pc <= (reset) ? 32'd0 : pcNext;
-    end
-    assign pcPlus4 = {pc[31:2], 2'b00} + 32'd4;  
-    //Handling branching and jump
-    assign pcNext = (isJAL | isJALR  | isBranchR) ? aluOut : pcPlus4;
+    always_ff @(posedge clock)
+        if (reset) pc <= 0;
+        else       pc <= (isJAL|isJALR|isBranchR) ? aluOut : (pc + 4);
 
     //Instruction memory
-    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", instructionMemory);
-    always_ff @(posedge clock) begin : InstructionMemory
-        instructionMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : instructionMemory[insMemAddr[8:0]] ;
-    end
-    assign instruction = (~insMemEn) ? instructionMemory[pc[10:2]] : 32'h00000013;
+    always_ff @(posedge clock) //initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
+        insMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : insMemory[insMemAddr[8:0]];
 
-    assign funct3 = instruction[14:12];
-    assign funct7 = instruction[31:25];
-    assign rs1 = instruction[19:15];
-    assign rs2 = instruction[24:20];
-    assign rd  = instruction[11:7];
-    assign opcode = instruction [6:2];
+    assign ins = insMemEn ? 32'h13 : insMemory[pc[10:2]];
+    assign {funct7, rs2, rs1, funct3, rd, opcode} = ins[31:2];
 
-    //Instruction decoder
-    assign isArithmetic = (opcode == 5'b01100) & (funct7[0] == 1'b0);
-    assign isImmediate  = (opcode == 5'b00100);
-    assign isLoadW      = (opcode == 5'b00000);
-    assign isLoadUI     = (opcode == 5'b01101);
-    assign isStoreW     = (opcode == 5'b01000);
-    assign isBranch     = (opcode == 5'b11000);
-    assign isJAL        = (opcode == 5'b11011);
-    assign isJALR       = (opcode == 5'b11001);
-    assign isMUL        = (opcode == 5'b01100) & (funct7[0] == 1'b1);     //For MUL and DIV
-    assign isAUIPC      = (opcode == 5'b00101);
+    always_comb begin
+        //ins decoder
+        isArithmetic = (opcode == 5'b01100) & (funct7[0] == 1'b0);
+        isMUL        = (opcode == 5'b01100) & (funct7[0] == 1'b1); //For MUL and DIV
+        isImmediate  = (opcode == 5'b00100);
+        isLoadW      = (opcode == 5'b00000);
+        isLoadUI     = (opcode == 5'b01101);
+        isStoreW     = (opcode == 5'b01000);
+        isBranch     = (opcode == 5'b11000);
+        isJAL        = (opcode == 5'b11011);
+        isJALR       = (opcode == 5'b11001);
+        isAUIPC      = (opcode == 5'b00101);
 
-    //Immediate generation
-    assign iImm    = {{21{instruction[31]}}, instruction[30:20]};                                 
-    assign sImm    = {{21{instruction[31]}},instruction[30:25],instruction[11:7]};                      
-    assign sbImm   = {{20{instruction[31]}},instruction[7],instruction[30:25],instruction[11:8],1'b0};       
-    assign uImm    = {instruction[31:12],12'b0};                                            
-    assign jImm    = {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
-    always_comb begin : ImmediateGeneration
-        case ({isImmediate , isLoadW , isLoadUI , isStoreW , isBranch , isJAL , isJALR, isAUIPC})
-            8'b1000_0000: imm = iImm;
-            8'b0100_0000: imm = iImm;
-            8'b0010_0000: imm = uImm;
-            8'b0001_0000: imm = sImm;
-            8'b0000_1000: imm = sbImm;
-            8'b0000_0100: imm = jImm;
-            8'b0000_0010: imm = iImm;
-            8'b0000_0001: imm = uImm;
-            default: imm = 32'd0;
-        endcase
+        //Immediate generation
+        uImm  = {ins[31:12], 12'b0};
+        iImm  = WIDTH'($signed( ins[31:20]));
+        sImm  = WIDTH'($signed({ins[31:25], ins[11:7]}));                      
+        sbImm = WIDTH'($signed({ins[31]   , ins[7]    , ins[30:25], ins[11:8] , 1'b0}));       
+        jImm  = WIDTH'($signed({ins[31]   , ins[19:12], ins[20]   , ins[30:21], 1'b0}));
+
+        if (isImmediate|isLoadW|isJALR) imm = iImm;
+        else if (isLoadUI|isAUIPC)      imm = uImm;
+        else if (isStoreW)              imm = sImm;
+        else if (isBranch)              imm = sbImm;
+        else if (isJAL)                 imm = jImm;
+        else                            imm = 0;
     end
 
-    //Registry
+    //Registers
     //initial $readmemh("data/registry.dat", registers);
     assign data_1 = (rs1 == 0) ? 0 : registers[rs1];
     assign data_2 = (rs2 == 0) ? 0 : registers[rs2];
     assign regWrite = isArithmetic | isImmediate | isLoadW | isLoadUI | isJAL | isJALR | isAUIPC;
-    always_ff @(posedge clock) begin : RegistryFile
-         if (regWrite) registers[rd] <= regData;
-    end
+
+    always_ff @(posedge clock)
+        if (regWrite) registers[rd] <= regData;
+        
 
     //ALU
-    assign isSrc2 = isImmediate | isLoadW | isLoadUI | isJAL | isJALR | isStoreW | isBranch | isAUIPC; 
-    assign src1 = (isJAL | isBranch | isAUIPC) ? pc : data_1;
-    assign src2 = (isSrc2)  ? imm : data_2;
-    always_comb begin : ALU
-        case (aluOp)
-            4'b0000 : aluOut = src1 + src2;  //Add
-            4'b1000 : aluOut = src1 - src2;  //Sub
-            4'b0001 : aluOut = src1 << src2[4:0];  //Sll
-            4'b0010 : aluOut = ($signed(src1) < $signed(src2) ? 32'd1 : 32'd0);  //Slt
-            4'b0011 : aluOut = (src1 < src2) ? 32'd1 : 32'd0;  //Sltu
-            4'b0100 : aluOut = src1 ^ src2;  //Xor
-            4'b0101 : aluOut = src1 >> src2[4:0];  //Srl
-            4'b1101 : aluOut =  $signed(src1) >>> src2[4:0];  //Sra
-            4'b0110 : aluOut = src1 | src2;  //Or
-            4'b0111 : aluOut = src1 & src2;  //And
-            4'b1001 : aluOut = src1 * src2;  //Mul
-            4'b1010 : aluOut = src1 / src2;  //Div
-            4'b1111 : aluOut = src2;        //Passthrough
-            default:  aluOut = 32'd0;
-        endcase
-    end  
-    always_comb begin : ALUControl
-        if (isMUL) begin
-            aluOp = (funct3[2] ? 4'b1010 : 4'b1001);
-        end else if (isArithmetic) begin
-            aluOp = {funct7[5], funct3};
-        end else if (isImmediate) begin
-             aluOp = ({funct3 == 3'b101}) ? {funct7[5], funct3} : {1'b0, funct3};
-        end else if (isAUIPC | isJAL | isJALR | isBranch | isLoadW | isStoreW) begin
-            aluOp = 4'b0000;   //Can put with load and store            
-        end else begin
-            aluOp =  4'b1111;
-        end
-    end
-    //SRA
+    localparam [3:0] ADD=0, SLL=1, SLT=2, SLTU=3, XOR=4, SRL=5, OR =6, AND=7, SUB=8, MUL=9, DIV=10, SRA=13, PASS=15;
 
+    always_comb begin
+        if      (isMUL)                                          aluOp = (funct3[2] ? DIV : MUL);
+        else if (isArithmetic)                                   aluOp = {funct7[5], funct3};
+        else if (isImmediate)                                    aluOp = (funct3 == 3'b101) ? {funct7[5], funct3} : {1'b0, funct3};
+        else if (isAUIPC|isJAL|isJALR|isBranch|isLoadW|isStoreW) aluOp = ADD ;   //Can put with load and store
+        else                                                     aluOp = PASS;
+
+        src1 = (isJAL|isBranch|isAUIPC) ? pc : data_1;
+        src2 = (isImmediate|isLoadW|isLoadUI|isJAL|isJALR|isStoreW|isBranch|isAUIPC) ? imm : data_2;
+
+        case (aluOp)
+            ADD    : aluOut = src1 + src2;
+            SUB    : aluOut = src1 - src2;                                      
+            SLL    : aluOut = src1 << src2[4:0];                                
+            SLT    : aluOut = WIDTH'($signed  (src1) < $signed  (src2));
+            SLTU   : aluOut = WIDTH'($unsigned(src1) < $unsigned(src2));  
+            XOR    : aluOut = src1 ^ src2;                    
+            SRL    : aluOut = src1 >> src2[4:0];
+            SRA    : aluOut = $signed(src1) >>> src2[4:0];
+            OR     : aluOut = src1 | src2;
+            AND    : aluOut = src1 & src2;
+            MUL    : aluOut = src1 * src2;
+            DIV    : aluOut = src1 / src2;
+            PASS   : aluOut = src2;                                             
+            default: aluOut = 0;
+        endcase
+    end
 
     //Branch decision
-    always_comb begin : BranchComparator
+    always_comb
         case (funct3[2:1])
-            2'b00: isBranchC = (funct3[0]) ^ (data_1 == data_2);                    //BNE, BEQ 
-            2'b10: isBranchC = (funct3[0]) ^ ($signed(data_1) < $signed(data_2));   //BLT, BGE
-            2'b11: isBranchC = (funct3[0]) ^ (data_1 < data_2);                     //BLTU, BGEU
+            2'b00  : isBranchC = (funct3[0]) ^ (data_1 == data_2);                    //BNE, BEQ 
+            2'b10  : isBranchC = (funct3[0]) ^ ($signed(data_1) < $signed(data_2));   //BLT, BGE
+            2'b11  : isBranchC = (funct3[0]) ^ (data_1 < data_2);                     //BLTU, BGEU
             default: isBranchC = 1'b0; 
         endcase
-    end
     assign isBranchR = isBranchC & isBranch;    //isBranch is from decoding of instruction
 
     //Data memory
-    //initial $readmemh("data/data.dat",dataMemory);
-    always_ff @(posedge clock) begin : DataMemory
-        if (isStoreW) begin
-            dataMemory[aluOut]   <= data_2[7:0];
-            dataMemory[aluOut+1] <= data_2[15:8];
-            dataMemory[aluOut+2] <= data_2[23:16];
-            dataMemory[aluOut+3] <= data_2[31:24];
-        end
-    end
-    assign dataMemOut =  {dataMemory[aluOut+3], dataMemory[aluOut+2], dataMemory[aluOut+1], dataMemory[aluOut]};
-    assign result = dataMemOut;     //Just to get an output
+    always_ff @(posedge clock) //initial $readmemh("data/data.dat",dataMemory);
+        if (isStoreW) dataMemory[aluOut] = data_2;
 
-    //Writeback Mux
-    assign regData = (isJALR | isJAL) ? pc + 4 : ((isLoadW) ? dataMemOut : aluOut);
-
-    //verifying
-    assign gp = registers[3];
-    assign a7 = registers[17];   
+    assign regData = (isJALR | isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
+    assign {gp, a7, dataMemOut} = {registers[3], registers[17], dataMemory[aluOut]}; //For verification
 endmodule

@@ -1,60 +1,60 @@
-tests/rv32ui-p-slti.dump.dat
-Last test passed : 25
-tests/rv32ui-p-bltu.dump.dat
-Last test passed : 21
-tests/rv32ui-p-sll.dump.dat
-Last test passed : 43
-tests/rv32ui-p-bgeu.dump.dat
-Last test passed : 24
-tests/rv32ui-p-slli.dump.dat
-Last test passed : 25
-tests/rv32ui-p-jal.dump.dat
-Last test passed : 3
-tests/rv32ui-p-blt.dump.dat
-Last test passed : 21
-tests/rv32ui-p-jalr.dump.dat
-Last test passed : 7
-tests/rv32ui-p-and.dump.dat
-Last test passed : 27
-tests/rv32ui-p-srl.dump.dat
-Last test passed : 43
 tests/rv32ui-p-add.dump.dat
 Last test passed : 38
-tests/rv32ui-p-sub.dump.dat
-Last test passed : 37
-tests/rv32ui-p-beq.dump.dat
-Last test passed : 21
-tests/rv32ui-p-ori.dump.dat
-Last test passed : 14
-tests/rv32ui-p-sltu.dump.dat
-Last test passed : 38
-tests/rv32ui-p-srai.dump.dat
-Last test passed : 25
-tests/rv32ui-p-srli.dump.dat
-Last test passed : 25
-tests/rv32ui-p-bne.dump.dat
-Last test passed : 21
-tests/rv32ui-p-xor.dump.dat
-Last test passed : 27
-tests/rv32ui-p-sltiu.dump.dat
-Last test passed : 25
-tests/rv32ui-p-sra.dump.dat
-Last test passed : 43
-tests/rv32ui-p-bge.dump.dat
-Last test passed : 24
-tests/rv32ui-p-andi.dump.dat
-Last test passed : 14
-tests/rv32ui-p-or.dump.dat
-Last test passed : 27
-tests/rv32ui-p-sw.dump.dat
-Last test passed : 23
-tests/rv32ui-p-xori.dump.dat
-Last test passed : 14
-tests/rv32ui-p-slt.dump.dat
-Last test passed : 38
-tests/rv32ui-p-lui.dump.dat
-Last test passed : 6
-tests/rv32ui-p-auipc.dump.dat
-Last test passed : 3
 tests/rv32ui-p-addi.dump.dat
 Last test passed : 25
+tests/rv32ui-p-and.dump.dat
+Last test passed : 27
+tests/rv32ui-p-andi.dump.dat
+Last test passed : 14
+tests/rv32ui-p-auipc.dump.dat
+Last test passed : 3
+tests/rv32ui-p-beq.dump.dat
+Last test passed : 21
+tests/rv32ui-p-bge.dump.dat
+Last test passed : 24
+tests/rv32ui-p-bgeu.dump.dat
+Last test passed : 24
+tests/rv32ui-p-blt.dump.dat
+Last test passed : 21
+tests/rv32ui-p-bltu.dump.dat
+Last test passed : 21
+tests/rv32ui-p-bne.dump.dat
+Last test passed : 21
+tests/rv32ui-p-jal.dump.dat
+Last test passed : 3
+tests/rv32ui-p-jalr.dump.dat
+Last test passed : 7
+tests/rv32ui-p-lui.dump.dat
+Last test passed : 6
+tests/rv32ui-p-or.dump.dat
+Last test passed : 27
+tests/rv32ui-p-ori.dump.dat
+Last test passed : 14
+tests/rv32ui-p-sll.dump.dat
+Last test passed : 43
+tests/rv32ui-p-slli.dump.dat
+Last test passed : 25
+tests/rv32ui-p-slt.dump.dat
+Last test passed : 38
+tests/rv32ui-p-slti.dump.dat
+Last test passed : 25
+tests/rv32ui-p-sltiu.dump.dat
+Last test passed : 25
+tests/rv32ui-p-sltu.dump.dat
+Last test passed : 38
+tests/rv32ui-p-sra.dump.dat
+Last test passed : 43
+tests/rv32ui-p-srai.dump.dat
+Last test passed : 25
+tests/rv32ui-p-srl.dump.dat
+Last test passed : 43
+tests/rv32ui-p-srli.dump.dat
+Last test passed : 25
+tests/rv32ui-p-sub.dump.dat
+Last test passed : 37
+tests/rv32ui-p-sw.dump.dat
+Last test passed : 23
+tests/rv32ui-p-xor.dump.dat
+Last test passed : 27
+tests/rv32ui-p-xori.dump.dat
+Last test passed : 14

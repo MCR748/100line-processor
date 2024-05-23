@@ -12,6 +12,7 @@ module tb_processor;
     logic clock = 0;
     logic reset = 0;
     logic result;
+    logic [WIDTH-1:0] dataMemOut;
     processor #(.WIDTH(WIDTH)) dut (.*);
 
     //Testbench variables
