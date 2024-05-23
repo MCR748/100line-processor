@@ -12,6 +12,16 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install GCC
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+
+    - name: Install Python
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip
+
     - name: Install Verilator
       run: |
         sudo apt-get install -y verilator
