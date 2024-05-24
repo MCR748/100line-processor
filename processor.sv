@@ -16,8 +16,7 @@ module processor #(
     logic [2:0] funct3;
     logic [6:0] funct7;
     logic [WIDTH-1:0] ins, imm, iImm, sImm, sbImm, uImm, jImm, pc, pcPlus4, data_1, data_2, regData, src1, src2, aluOut;
-    logic isBranchC, isBranchR, regWrite; //Branch Result of is it a branching instruction and should branch
-    logic isArithmetic, isImmediate, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC;
+    logic isArithmetic, isImmediate, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC, isBranchC, isBranchR, regWrite;
     
     //PC
     always_ff @(posedge clock)
@@ -82,7 +81,7 @@ module processor #(
         src1 = (isJAL|isBranch|isAUIPC) ? pc : data_1;
         src2 = (isImmediate|isLoadW|isLoadUI|isJAL|isJALR|isStoreW|isBranch|isAUIPC) ? imm : data_2;
 
-        case (aluOp)
+        unique case (aluOp)
             ADD    : aluOut = src1 + src2;
             SUB    : aluOut = src1 - src2;                                      
             SLL    : aluOut = src1 << src2[4:0];                                
@@ -101,19 +100,18 @@ module processor #(
     end
 
     //Branch decision
-    always_comb
-        case (funct3[2:1])
-            2'b00  : isBranchC = (funct3[0]) ^ (data_1 == data_2);                    //BNE, BEQ 
-            2'b10  : isBranchC = (funct3[0]) ^ ($signed(data_1) < $signed(data_2));   //BLT, BGE
-            2'b11  : isBranchC = (funct3[0]) ^ (data_1 < data_2);                     //BLTU, BGEU
-            default: isBranchC = 1'b0; 
-        endcase
+    always_comb case (funct3[2:1])
+        2'b00  : isBranchC = (funct3[0]) ^ (data_1 == data_2);                    //BNE, BEQ 
+        2'b10  : isBranchC = (funct3[0]) ^ ($signed(data_1) < $signed(data_2));   //BLT, BGE
+        2'b11  : isBranchC = (funct3[0]) ^ (data_1 < data_2);                     //BLTU, BGEU
+        default: isBranchC = 1'b0; 
+    endcase
     assign isBranchR = isBranchC & isBranch;    //isBranch is from decoding of instruction
 
     //Data memory
     always_ff @(posedge clock) //initial $readmemh("data/data.dat",dataMemory);
         if (isStoreW) dataMemory[aluOut] = data_2;
 
-    assign regData = (isJALR | isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
+    assign regData = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
     assign {gp, a7, dataMemOut} = {registers[3], registers[17], dataMemory[aluOut]}; //For verification
 endmodule
