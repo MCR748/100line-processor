@@ -22,8 +22,8 @@ module processor #(
     if (reset) pc <= 0;
     else       pc <= (isJAL|isJALR|(isBranchC & isBranch)) ? aluOut : (pc + 4);
 
-  //Instruction memory
-  always_ff @(posedge clock) //initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
+  //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
+  always_ff @(posedge clock) 
     insMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : insMemory[insMemAddr[8:0]];
 
   assign ins = insMemEn ? 32'h13 : insMemory[pc[10:2]];
