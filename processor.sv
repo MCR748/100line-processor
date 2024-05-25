@@ -4,7 +4,7 @@ module processor #(
   WIDTH = 32, IMEM_DEPTH=512, DMEM_DEPTH=32, NUM_REGS=32
 )(
   input  logic clock, reset, insMemEn,
-  input  logic [WIDTH-1:0] insMemData, insMemAddr,
+  input  logic [WIDTH-1:0] insMemDataIn, insMemAddr,
   output logic [WIDTH-1:0] gp, a7 //verifying
 );
   logic [DMEM_DEPTH-1:0][WIDTH-1:0] dataMemory;
@@ -20,17 +20,18 @@ module processor #(
   //PC
   always_ff @(posedge clock)
     if (reset) pc <= 0;
-    else       pc <= (isJAL|isJALR|(isBranchC & isBranch)) ? aluOut : (pc + 4);
+    else       pc <= (isJAL|isJALR|isBranchC) ? aluOut : (pc + 4);
 
   //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
   always_ff @(posedge clock) 
-    insMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : insMemory[insMemAddr[8:0]];
+    if (insMemEn) insMemory[insMemAddr] <= insMemDataIn;
 
   assign ins = insMemEn ? 32'h13 : insMemory[pc[10:2]];
-  assign {funct7, rs2, rs1, funct3, rd, opcode} = ins[31:2];
 
   always_comb begin
     //Instruction decoder
+    {funct7, rs2, rs1, funct3, rd, opcode} = ins[31:2];
+    
     isArithmetic = (opcode == 5'b01100) & (funct7[0] == 1'b0);
     isMUL        = (opcode == 5'b01100) & (funct7[0] == 1'b1); //For MUL and DIV
     isImm        = (opcode == 5'b00100);
@@ -64,12 +65,12 @@ module processor #(
 
   always_comb begin
     if      (isMUL)                                          aluOp = (funct3[2] ? DIV : MUL);
-    else if (isArithmetic)                                   aluOp = {funct7[5], funct3};
-    else if (isImm)                                          aluOp = (funct3 == 3'b101) ? {funct7[5], funct3} : {1'b0, funct3};
+    else if (isArithmetic)                                   aluOp = {funct7[5]                   , funct3};
+    else if (isImm)                                          aluOp = {funct7[5] & (funct3==3'b101), funct3};
     else if (isAUIPC|isJAL|isJALR|isBranch|isLoadW|isStoreW) aluOp = ADD ;   //Can put with load and store
     else                                                     aluOp = PASS;
 
-    src1 = (isJAL|isBranch|isAUIPC) ? pc : data_1;
+    src1 = (isJAL|isBranch|isAUIPC)                                        ? pc  : data_1;
     src2 = (isImm|isLoadW|isLoadUI|isJAL|isJALR|isStoreW|isBranch|isAUIPC) ? imm : data_2;
 
     unique case (aluOp)
@@ -87,15 +88,15 @@ module processor #(
       DIV    : aluOut = src1 / src2;
       PASS   : aluOut = src2;                                             
       default: aluOut = 0;
-    endcase
+    endcase 
   end
 
   //Branch decision
   always_comb case (funct3[2:1])
-    2'b00  : isBranchC = (funct3[0]) ^ (data_1 == data_2);                    //BNE, BEQ 
-    2'b10  : isBranchC = (funct3[0]) ^ ($signed(data_1) < $signed(data_2));   //BLT, BGE
-    2'b11  : isBranchC = (funct3[0]) ^ (data_1 < data_2);                     //BLTU, BGEU
-    default: isBranchC = 1'b0; 
+    2'b00  : isBranchC = isBranch & (funct3[0] ^ (data_1 == data_2));                  //BNE, BEQ 
+    2'b10  : isBranchC = isBranch & (funct3[0] ^ ($signed(data_1) < $signed(data_2))); //BLT, BGE
+    2'b11  : isBranchC = isBranch & (funct3[0] ^ (data_1 < data_2));                   //BLTU, BGEU
+    default: isBranchC = 1'b0;
   endcase
 
   //Data memory    //initial $readmemh("data/data.dat",dataMemory);
