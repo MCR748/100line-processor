@@ -17,6 +17,51 @@
 
 int algo_passed = 0;
 
+int fibonacci(int n) {
+    if (n <= 1) {
+        return n;
+    } else {
+        int a = 0;
+        int b = 1;
+        int temp;
+        for (int i = 2; i <= n; i++) {
+            temp = a;
+            a = b;
+            b = temp + b;
+        }
+        return b;
+    }
+}
+
+#define MAX 100
+int sieve_of_eratosthenes(int n) {
+    // Array to store prime status
+    int prime[MAX + 1];
+    int count = 0;
+
+    // Initialize all entries as true (1).
+    for (int i = 0; i <= n; i++) {
+        prime[i] = 1;
+    }
+
+    for (int p = 2; p * p <= n; p++) {
+        // If prime[p] is not changed, then it is a prime
+        if (prime[p] == 1) {
+            // Update all multiples of p to not prime
+            for (int i = p * p; i <= n; i += p) {
+                prime[i] = 0;
+            }
+        }
+    }
+
+    for (int p = 2; p <= n; p++) {
+        if (prime[p] == 1) {
+            count = count + 1;
+        }
+    }
+    return count;
+}
+
 void runSimulation(const std::string& filename) {
     #define MAX_SIM_TIME   100000
     vluint64_t sim_time =   0;
@@ -81,14 +126,14 @@ void runSimulation(const std::string& filename) {
 
         //Verifying
         if (filename == "algorithms/fib.dat") {
-            if (dut->a0 == 55) {
+            if (dut->a0 == fibonacci(10)) {
                 std::cout << "Fibonacci sequence passed \n"<< std::endl;
                 algo_passed++;
                 break;
             }
         }
         if (filename == "algorithms/prime.dat") {
-            if (dut->a0 == 15) {
+            if (dut->a0 == sieve_of_eratosthenes(50)) {
                 std::cout << "Prime number generator passed \n"<< std::endl;
                 algo_passed++;
                 break;
