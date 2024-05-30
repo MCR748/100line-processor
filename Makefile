@@ -1,42 +1,44 @@
 MODULE=processor
 
-.PHONY:sim
-sim: waves
+.PHONY:tests
+tests: waveform_tests.vcd
 
-.PHONY:verilate
-verilate: .stamp.verilate
+.PHONY:algo
+algo: waveform_algo.vcd
 
-.PHONY:build
-build: .obj_dir/V$(MODULE)
-
-.PHONY:waves
-waves: waveform.vcd
-	@echo
-	@echo "### WAVES ###"
-	gtkwave waveform.vcd
-
-waveform.vcd: ./obj_dir/V$(MODULE)
+waveform_tests.vcd: ./obj_dir/V$(MODULE)_tests
 	@echo
 	@echo "### SIMULATING ###"
 	@./obj_dir/V$(MODULE) +verilator+rand+reset+2
 
-./obj_dir/V$(MODULE): .stamp.verilate
+./obj_dir/V$(MODULE)_tests: .stamp.verilate_tests
 	@echo
 	@echo "### BUILDING SIM ###"
 	make -C obj_dir -f V$(MODULE).mk V$(MODULE)
 
-.stamp.verilate: $(MODULE).sv tb_$(MODULE).cpp tests/*
+.stamp.verilate_tests: $(MODULE).sv tb_$(MODULE).cpp tests/*
 	@echo
 	@echo "### VERILATING ###"
 	verilator -Wall --trace --x-assign unique --x-initial unique -cc $(MODULE).sv --exe tb_$(MODULE).cpp
-	@touch .stamp.verilate
+	@touch .stamp.verilate_tests
 
-	# cmd = f'{SIM_PATH}verilator --binary -j 0 -O3 --trace --relative-includes --top {self.TB_MODULE} -I../ -F ../sources.txt -CFLAGS -I../ {self.MODULE_DIR}/c/sim.c --Mdir ./'
-	# ./V{self.TB_MODULE}
 
-.PHONY:lint
-lint: $(MODULE).v
-	verilator --lint-only $(MODULE).v
+waveform_algo.vcd: ./obj_dir/V$(MODULE)_algo
+	@echo
+	@echo "### SIMULATING ###"
+	@./obj_dir/V$(MODULE) +verilator+rand+reset+2
+
+./obj_dir/V$(MODULE)_algo: .stamp.verilate_algo
+	@echo
+	@echo "### BUILDING SIM ###"
+	make -C obj_dir -f V$(MODULE).mk V$(MODULE)
+
+.stamp.verilate_algo: $(MODULE).sv tb_algo.cpp algorithms/*
+	@echo
+	@echo "### VERILATING ###"
+	verilator -Wall --trace --x-assign unique --x-initial unique -cc $(MODULE).sv --exe tb_algo.cpp
+	@touch .stamp.verilate_algo
+
 
 .PHONY: clean
 clean:

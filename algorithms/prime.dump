@@ -1,0 +1,197 @@
+
+prime.x:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+   0:	40000113          	li	sp,1024
+   4:	138000ef          	jal	13c <main>
+   8:	0000006f          	j	8 <_start+0x8>
+
+0000000c <sieve_of_eratosthenes>:
+   c:	e3010113          	addi	sp,sp,-464
+  10:	1c812623          	sw	s0,460(sp)
+  14:	1d010413          	addi	s0,sp,464
+  18:	e2a42e23          	sw	a0,-452(s0)
+  1c:	fe042623          	sw	zero,-20(s0)
+  20:	fe042423          	sw	zero,-24(s0)
+  24:	0280006f          	j	4c <sieve_of_eratosthenes+0x40>
+  28:	fe842783          	lw	a5,-24(s0)
+  2c:	00279793          	slli	a5,a5,0x2
+  30:	ff078793          	addi	a5,a5,-16
+  34:	008787b3          	add	a5,a5,s0
+  38:	00100713          	li	a4,1
+  3c:	e4e7ac23          	sw	a4,-424(a5)
+  40:	fe842783          	lw	a5,-24(s0)
+  44:	00178793          	addi	a5,a5,1
+  48:	fef42423          	sw	a5,-24(s0)
+  4c:	fe842703          	lw	a4,-24(s0)
+  50:	e3c42783          	lw	a5,-452(s0)
+  54:	fce7dae3          	bge	a5,a4,28 <sieve_of_eratosthenes+0x1c>
+  58:	00200793          	li	a5,2
+  5c:	fef42223          	sw	a5,-28(s0)
+  60:	06c0006f          	j	cc <sieve_of_eratosthenes+0xc0>
+  64:	fe442783          	lw	a5,-28(s0)
+  68:	00279793          	slli	a5,a5,0x2
+  6c:	ff078793          	addi	a5,a5,-16
+  70:	008787b3          	add	a5,a5,s0
+  74:	e587a703          	lw	a4,-424(a5)
+  78:	00100793          	li	a5,1
+  7c:	04f71263          	bne	a4,a5,c0 <sieve_of_eratosthenes+0xb4>
+  80:	fe442783          	lw	a5,-28(s0)
+  84:	02f787b3          	mul	a5,a5,a5
+  88:	fef42023          	sw	a5,-32(s0)
+  8c:	0280006f          	j	b4 <sieve_of_eratosthenes+0xa8>
+  90:	fe042783          	lw	a5,-32(s0)
+  94:	00279793          	slli	a5,a5,0x2
+  98:	ff078793          	addi	a5,a5,-16
+  9c:	008787b3          	add	a5,a5,s0
+  a0:	e407ac23          	sw	zero,-424(a5)
+  a4:	fe042703          	lw	a4,-32(s0)
+  a8:	fe442783          	lw	a5,-28(s0)
+  ac:	00f707b3          	add	a5,a4,a5
+  b0:	fef42023          	sw	a5,-32(s0)
+  b4:	fe042703          	lw	a4,-32(s0)
+  b8:	e3c42783          	lw	a5,-452(s0)
+  bc:	fce7dae3          	bge	a5,a4,90 <sieve_of_eratosthenes+0x84>
+  c0:	fe442783          	lw	a5,-28(s0)
+  c4:	00178793          	addi	a5,a5,1
+  c8:	fef42223          	sw	a5,-28(s0)
+  cc:	fe442783          	lw	a5,-28(s0)
+  d0:	02f787b3          	mul	a5,a5,a5
+  d4:	e3c42703          	lw	a4,-452(s0)
+  d8:	f8f756e3          	bge	a4,a5,64 <sieve_of_eratosthenes+0x58>
+  dc:	00200793          	li	a5,2
+  e0:	fcf42e23          	sw	a5,-36(s0)
+  e4:	0380006f          	j	11c <sieve_of_eratosthenes+0x110>
+  e8:	fdc42783          	lw	a5,-36(s0)
+  ec:	00279793          	slli	a5,a5,0x2
+  f0:	ff078793          	addi	a5,a5,-16
+  f4:	008787b3          	add	a5,a5,s0
+  f8:	e587a703          	lw	a4,-424(a5)
+  fc:	00100793          	li	a5,1
+ 100:	00f71863          	bne	a4,a5,110 <sieve_of_eratosthenes+0x104>
+ 104:	fec42783          	lw	a5,-20(s0)
+ 108:	00178793          	addi	a5,a5,1
+ 10c:	fef42623          	sw	a5,-20(s0)
+ 110:	fdc42783          	lw	a5,-36(s0)
+ 114:	00178793          	addi	a5,a5,1
+ 118:	fcf42e23          	sw	a5,-36(s0)
+ 11c:	fdc42703          	lw	a4,-36(s0)
+ 120:	e3c42783          	lw	a5,-452(s0)
+ 124:	fce7d2e3          	bge	a5,a4,e8 <sieve_of_eratosthenes+0xdc>
+ 128:	fec42783          	lw	a5,-20(s0)
+ 12c:	00078513          	mv	a0,a5
+ 130:	1cc12403          	lw	s0,460(sp)
+ 134:	1d010113          	addi	sp,sp,464
+ 138:	00008067          	ret
+
+0000013c <main>:
+ 13c:	fe010113          	addi	sp,sp,-32
+ 140:	00112e23          	sw	ra,28(sp)
+ 144:	00812c23          	sw	s0,24(sp)
+ 148:	02010413          	addi	s0,sp,32
+ 14c:	03200793          	li	a5,50
+ 150:	fef42623          	sw	a5,-20(s0)
+ 154:	fec42503          	lw	a0,-20(s0)
+ 158:	eb5ff0ef          	jal	c <sieve_of_eratosthenes>
+ 15c:	fea42423          	sw	a0,-24(s0)
+ 160:	00000793          	li	a5,0
+ 164:	00078513          	mv	a0,a5
+ 168:	01c12083          	lw	ra,28(sp)
+ 16c:	01812403          	lw	s0,24(sp)
+ 170:	02010113          	addi	sp,sp,32
+ 174:	00008067          	ret
+
+Disassembly of section .eh_frame:
+
+00000178 <.eh_frame>:
+ 178:	0010                	.insn	2, 0x0010
+ 17a:	0000                	.insn	2, 0x
+ 17c:	0000                	.insn	2, 0x
+ 17e:	0000                	.insn	2, 0x
+ 180:	00527a03          	.insn	4, 0x00527a03
+ 184:	7c01                	.insn	2, 0x7c01
+ 186:	0101                	.insn	2, 0x0101
+ 188:	00020d1b          	.insn	4, 0x00020d1b
+ 18c:	0024                	.insn	2, 0x0024
+ 18e:	0000                	.insn	2, 0x
+ 190:	0018                	.insn	2, 0x0018
+ 192:	0000                	.insn	2, 0x
+ 194:	fe78                	.insn	2, 0xfe78
+ 196:	ffff                	.insn	2, 0xffff
+ 198:	0130                	.insn	2, 0x0130
+ 19a:	0000                	.insn	2, 0x
+ 19c:	4400                	.insn	2, 0x4400
+ 19e:	d00e                	.insn	2, 0xd00e
+ 1a0:	01884403          	lbu	s0,24(a6)
+ 1a4:	0c44                	.insn	2, 0x0c44
+ 1a6:	0008                	.insn	2, 0x0008
+ 1a8:	c8011c03          	lh	s8,-896(sp)
+ 1ac:	020c                	.insn	2, 0x020c
+ 1ae:	03d0                	.insn	2, 0x03d0
+ 1b0:	0e44                	.insn	2, 0x0e44
+ 1b2:	0000                	.insn	2, 0x
+ 1b4:	0024                	.insn	2, 0x0024
+ 1b6:	0000                	.insn	2, 0x
+ 1b8:	0040                	.insn	2, 0x0040
+ 1ba:	0000                	.insn	2, 0x
+ 1bc:	ff80                	.insn	2, 0xff80
+ 1be:	ffff                	.insn	2, 0xffff
+ 1c0:	003c                	.insn	2, 0x003c
+ 1c2:	0000                	.insn	2, 0x
+ 1c4:	4400                	.insn	2, 0x4400
+ 1c6:	200e                	.insn	2, 0x200e
+ 1c8:	8148                	.insn	2, 0x8148
+ 1ca:	8801                	.insn	2, 0x8801
+ 1cc:	4402                	.insn	2, 0x4402
+ 1ce:	080c                	.insn	2, 0x080c
+ 1d0:	6000                	.insn	2, 0x6000
+ 1d2:	44c1                	.insn	2, 0x44c1
+ 1d4:	0cc8                	.insn	2, 0x0cc8
+ 1d6:	2002                	.insn	2, 0x2002
+ 1d8:	0e44                	.insn	2, 0x0e44
+	...
+
+Disassembly of section .riscv.attributes:
+
+00000000 <.riscv.attributes>:
+   0:	4d41                	.insn	2, 0x4d41
+   2:	0000                	.insn	2, 0x
+   4:	7200                	.insn	2, 0x7200
+   6:	7369                	.insn	2, 0x7369
+   8:	01007663          	bgeu	zero,a6,14 <sieve_of_eratosthenes+0x8>
+   c:	00000043          	fmadd.s	ft0,ft0,ft0,ft0,rne
+  10:	1004                	.insn	2, 0x1004
+  12:	7205                	.insn	2, 0x7205
+  14:	3376                	.insn	2, 0x3376
+  16:	6932                	.insn	2, 0x6932
+  18:	7032                	.insn	2, 0x7032
+  1a:	5f31                	.insn	2, 0x5f31
+  1c:	326d                	.insn	2, 0x326d
+  1e:	3070                	.insn	2, 0x3070
+  20:	615f 7032 5f31      	.insn	6, 0x5f317032615f
+  26:	3266                	.insn	2, 0x3266
+  28:	3270                	.insn	2, 0x3270
+  2a:	645f 7032 5f32      	.insn	6, 0x5f327032645f
+  30:	697a                	.insn	2, 0x697a
+  32:	32727363          	bgeu	tp,t2,358 <main+0x21c>
+  36:	3070                	.insn	2, 0x3070
+  38:	7a5f 6669 6e65      	.insn	6, 0x6e6566697a5f
+  3e:	32696563          	bltu	s2,t1,368 <main+0x22c>
+  42:	3070                	.insn	2, 0x3070
+  44:	7a5f 6d6d 6c75      	.insn	6, 0x6c756d6d7a5f
+  4a:	7031                	.insn	2, 0x7031
+  4c:	0030                	.insn	2, 0x0030
+
+Disassembly of section .comment:
+
+00000000 <.comment>:
+   0:	3a434347          	fmsub.d	ft6,ft6,ft4,ft7,rmm
+   4:	2820                	.insn	2, 0x2820
+   6:	2029                	.insn	2, 0x2029
+   8:	3331                	.insn	2, 0x3331
+   a:	322e                	.insn	2, 0x322e
+   c:	302e                	.insn	2, 0x302e
+	...

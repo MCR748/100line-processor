@@ -11,7 +11,8 @@ module processor #(parameter WIDTH = 32) (
     output logic [WIDTH-1: 0] result,        //Not required for functioning, for the sake of an output
     //verifying
     output logic [WIDTH-1: 0] gp,
-    output logic [WIDTH-1: 0] a7
+    output logic [WIDTH-1: 0] a7,
+    output logic [WIDTH-1: 0] a0
 );
     logic isBranchC, isBranchR;                  //Branch Result of is it a branching instruction and should branch
     logic isSrc2, regWrite;
@@ -163,5 +164,6 @@ module processor #(parameter WIDTH = 32) (
 
     //verifying
     assign gp = registers[3];
+    assign a0 = registers[10];
     assign a7 = registers[17];   
 endmodule
