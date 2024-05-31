@@ -52,13 +52,17 @@ module processor #(
     else                       imm = 0;
   end
 
-  //Registers     //initial $readmemh("data/registry.dat", registers);
+  //Read Registers     
   assign data_1 = (rs1 == 0) ? 0 : registers[rs1];
   assign data_2 = (rs2 == 0) ? 0 : registers[rs2];
-  assign regWriteEn = isArithmetic|isImm|isLoadW|isLoadUI|isJAL|isJALR|isAUIPC;
-
-  always_ff @(posedge clock)
-    if (regWriteEn) registers[rd] <= regDataIn;
+  
+  //Branch decision
+  always_comb case (funct3[2:1])
+    2'b00  : isBranchC = isBranch & (funct3[0] ^ (data_1 == data_2));                  //BNE, BEQ 
+    2'b10  : isBranchC = isBranch & (funct3[0] ^ ($signed(data_1) < $signed(data_2))); //BLT, BGE
+    2'b11  : isBranchC = isBranch & (funct3[0] ^ (data_1 < data_2));                   //BLTU, BGEU
+    default: isBranchC = 1'b0;
+  endcase
 
   //ALU
   localparam [3:0] ADD=0, SLL=1, SLT=2, SLTU=3, XOR=4, SRL=5, OR=6, AND=7, SUB=8, MUL=9, DIV=10, SRA=13, PASS=15;
@@ -91,18 +95,16 @@ module processor #(
     endcase 
   end
 
-  //Branch decision
-  always_comb case (funct3[2:1])
-    2'b00  : isBranchC = isBranch & (funct3[0] ^ (data_1 == data_2));                  //BNE, BEQ 
-    2'b10  : isBranchC = isBranch & (funct3[0] ^ ($signed(data_1) < $signed(data_2))); //BLT, BGE
-    2'b11  : isBranchC = isBranch & (funct3[0] ^ (data_1 < data_2));                   //BLTU, BGEU
-    default: isBranchC = 1'b0;
-  endcase
-
   //Data memory    //initial $readmemh("data/data.dat",dataMemory);
   always_ff @(posedge clock) 
     if (isStoreW) dataMemory[aluOut] <= data_2;
 
-  assign regDataIn = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
+  // Writeback to register bank
+  assign regWriteEn = isArithmetic|isImm|isLoadW|isLoadUI|isJAL|isJALR|isAUIPC;
+  assign regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
+
+  always_ff @(posedge clock) //initial $readmemh("data/registry.dat", registers);
+    if (regWriteEn) registers[rd] <= regDataIn;
+
   assign {gp, a7, dataMemOut} = {registers[3], registers[17], dataMemory[aluOut]}; //For verification
 endmodule
