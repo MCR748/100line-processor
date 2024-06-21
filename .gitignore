@@ -1,3 +1,6 @@
 obj_dir
 vivado
 .stamp.verilate
+.vscode
+__*
+c/x86/
