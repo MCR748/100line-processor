@@ -7,14 +7,56 @@ module processor #(
   input  wire [WIDTH-1:0] insMemDataIn, insMemAddr,
   output reg  [WIDTH-1:0] gp, a7 //verifying
 );
+
   reg [WIDTH-1:0] dataMemory [DMEM_DEPTH-1:0];
   reg [WIDTH-1:0] insMemory  [IMEM_DEPTH-1:0];
+  wire [WIDTH-1:0] dataMemDataM2P, dataMemDataP2M, insMemDataM2P;
+  wire [$clog2(IMEM_DEPTH)-1:0] insMemAddrP2M;
+  wire [$clog2(DMEM_DEPTH)-1:0] dataMemAddr;
+  wire dataMemWen;
+
+
+  //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
+  always @(posedge clock) 
+    if (insMemEn) insMemory[insMemAddr] <= insMemDataIn;
+
+  //Data memory    //initial $readmemh("data/data.dat",dataMemory);
+  always @(posedge clock) 
+    if (dataMemWen) dataMemory[dataMemAddr] <= dataMemDataP2M;
+
+  assign dataMemDataM2P = dataMemory[dataMemAddr];
+  assign insMemDataM2P  = insMemory[insMemAddrP2M];
+
+  processor_only #(
+    .WIDTH(WIDTH), .IMEM_DEPTH(IMEM_DEPTH), .DMEM_DEPTH(DMEM_DEPTH), .NUM_REGS(NUM_REGS)
+  ) processor_only_inst (
+    .clock(clock), .reset(reset), .insMemEn(insMemEn),
+    .insMemDataIn(insMemDataM2P), .dataMemDataIn(dataMemDataM2P),
+    .insMemAddr(insMemAddrP2M), .dataMemAddr(dataMemAddr), .dataMemDataOut(dataMemDataP2M),
+    .dataMemWen(dataMemWen),
+    .gp(gp), .a7(a7)
+  );
+
+endmodule
+
+
+module processor_only #(
+  WIDTH = 32, IMEM_DEPTH=512, DMEM_DEPTH=32, NUM_REGS=32, W_DMEM_ADDR=$clog2(DMEM_DEPTH)
+)(
+  input  wire clock, reset, insMemEn,
+  input  wire [WIDTH-1:0] insMemDataIn, dataMemDataIn,
+  output reg  [$clog2(IMEM_DEPTH)-1:0] insMemAddr, 
+  output reg  [W_DMEM_ADDR-1:0] dataMemAddr,
+  output reg  dataMemWen,
+  output reg  [WIDTH-1:0] gp, a7, dataMemDataOut //verifying
+);
+
   reg [WIDTH-1:0] registers  [NUM_REGS  -1:0];
   reg [3:0] aluOp;
   reg [4:0] rs1, rs2, rd, opcode;
   reg [2:0] funct3;
   reg [6:0] funct7;
-  reg [WIDTH-1:0] ins, imm, pc, data_1, data_2, regDataIn, src1, src2, aluOut, dataMemOut;
+  reg [WIDTH-1:0] ins, imm, pc, data_1, data_2, regDataIn, src1, src2, aluOut;
   reg isArithmetic, isImm, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC, isBranchC, regWriteEn;
   
   //PC
@@ -22,13 +64,10 @@ module processor #(
     if (reset) pc <= 0;
     else       pc <= (isJAL|isJALR|isBranchC) ? aluOut : (pc + 4);
 
-  //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
-  always @(posedge clock) 
-    if (insMemEn) insMemory[insMemAddr] <= insMemDataIn;
-
   always @* begin
 
-    ins = insMemEn ? 32'h13 : insMemory[pc[10:2]];
+    insMemAddr = pc[10:2];
+    ins = insMemEn ? 32'h13 : insMemDataIn;
 
     //Instruction decoder
     {funct7, rs2, rs1, funct3, rd, opcode} = ins[31:2];
@@ -95,16 +134,15 @@ module processor #(
       default: aluOut = 0;
     endcase 
 
-    {gp, a7, dataMemOut} = {registers[3], registers[17], dataMemory[aluOut]}; //For verification
+    dataMemAddr = W_DMEM_ADDR'(aluOut);
+    {gp, a7} = {registers[3], registers[17]}; //For verification
 
     // Writeback to register bank
     regWriteEn = isArithmetic|isImm|isLoadW|isLoadUI|isJAL|isJALR|isAUIPC;
-    regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
+    regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemDataIn : aluOut); //Writeback Mux
+    dataMemWen = isStoreW;
+    dataMemDataOut = data_2;
   end
-
-  //Data memory    //initial $readmemh("data/data.dat",dataMemory);
-  always @(posedge clock) 
-    if (isStoreW) dataMemory[aluOut] <= data_2;
 
   always @(posedge clock) //initial $readmemh("data/registry.dat", registers);
     if (regWriteEn) registers[rd] <= regDataIn;
