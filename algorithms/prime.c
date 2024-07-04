@@ -1,11 +1,35 @@
-#ifdef __x86_64__
 #include <stdio.h>
+#include <stdlib.h>
+
+#define MAX 100  // Upper limit of the numbers checkecd
+
+// Function prototype declaration
+void sieve_of_eratosthenes(int n, int num_primes, int *primes);
+
+int main() {
+    int n = MAX;
+    int num_primes = 10; // Number of primes to find
+    int primes[10]; // Integer array to store the primes
+
+#ifdef __x86_64__
+    sieve_of_eratosthenes(n, num_primes, primes);
+    printf("The first %d prime numbers below %d are:\n", num_primes, n);
+    for (int i = 0; i < num_primes; i++) {
+        printf("%d ", primes[i]);
+    }
+    printf("\n");
+#elif defined(__riscv)
+    sieve_of_eratosthenes(n, num_primes, primes);
+    uintptr_t arraySize = sizeof(primes);
+    uintptr_t arrayPointer = (uintptr_t)primes;
+#else
+#error "Unsupported architecture"
 #endif
+    return 0;
+}
 
-#define MAX 100  // Define a reasonable limit for the array size
-
-int sieve_of_eratosthenes(int n) {
-    // Array to store prime status
+// Implementation of sieve_of_eratosthenes
+void sieve_of_eratosthenes(int n, int num_primes, int *primes) {
     int prime[MAX + 1];
     int count = 0;
 
@@ -15,35 +39,16 @@ int sieve_of_eratosthenes(int n) {
     }
 
     for (int p = 2; p * p <= n; p++) {
-        // If prime[p] is not changed, then it is a prime
         if (prime[p] == 1) {
-            // Update all multiples of p to not prime
             for (int i = p * p; i <= n; i += p) {
                 prime[i] = 0;
             }
         }
     }
 
-    for (int p = 2; p <= n; p++) {
+    for (int p = 2, j = 0; p <= n && j < num_primes; p++) {
         if (prime[p] == 1) {
-            count = count + 1;
+            primes[j++] = p; // Store the prime number in the passed array
         }
     }
-    return count;
-}
-
-int main() {
-    int n = 50;
-    
-
-#ifdef __x86_64__
-    int num = sieve_of_eratosthenes(n);
-    printf("Amount of prime numbers below 50 is %d\n", num);
-#elif defined(__riscv)
-    int num = sieve_of_eratosthenes(n);
-#else
-#error "Unsupported architecture"
-#endif
-
-    return 0;
 }
