@@ -61,7 +61,7 @@ void runSimulation(const std::string& filename) {
         //Initailizing the vector values
         if (dut->clock ==   1) {
             if (sim_time >=   1 && sim_time <= size +   1) {
-                dut->insMemData = hexVector[posedge_cnt];
+                dut->insMemDataIn = hexVector[posedge_cnt];
                 dut->insMemAddr = posedge_cnt;
                 dut->insMemEn =   1;
                 posedge_cnt++;
@@ -71,7 +71,7 @@ void runSimulation(const std::string& filename) {
         //Resetting for one clock cycle 
         if (sim_time >=   3 + size && sim_time <=   4 + size) {
             dut->reset =   1;
-            dut->insMemData =   0;
+            dut->insMemDataIn =   0;
             dut->insMemAddr =   0;
             dut->insMemEn =   0;
         }

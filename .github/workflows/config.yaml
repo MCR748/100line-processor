@@ -31,7 +31,30 @@ jobs:
         sudo apt-get install -y make
 
     - name: Run all standard simulation
-      run: make tests
+      run: make waveform.vcd
 
-    - name: Run all algorithms
-      run: make algo
+  c_to_sim:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install GCC
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+
+    - name: Install Python
+      run: |
+        sudo apt-get install -y python3 python3-pip
+        pip install pytest
+
+    - name: Install Verilator
+      run: |
+        sudo apt-get install -y verilator
+
+    - name: Run C to simulation
+      run: |
+        mkdir c/x86
+        mkdir c/riscv
+        pytest -s test.py
