@@ -15,8 +15,8 @@ A RV32I processor written to support a choosen set of instructions. Inprogress.
   SRA  : x[rd] = x[rs1] >>s   x[rs2]
   OR   : x[rd] = x[rs1] |     x[rs2]
   AND  : x[rd] = x[rs1] &     x[rs2]
-+ MUL  : x[rd] = x[rs1] (s×s) x[rs2]
-+ DIV  : x[rd] = x[rs1] /s    x[rs2]
+- MUL  : x[rd] = x[rs1] (s×s) x[rs2]
+- DIV  : x[rd] = x[rs1] /s    x[rs2]
 ```
 
 ### Arithmetic with immediate
@@ -38,17 +38,17 @@ A RV32I processor written to support a choosen set of instructions. Inprogress.
 
 ```diff
   LW  : x[rd] = sext(M[x[rs1] + sext(offset)][31:0])
-- LH  : x[rd] = sext(M[x[rs1] + sext(offset)][15:0])
-- LB  : x[rd] = sext(M[x[rs1] + sext(offset)][7:0])
-- LHU : x[rd] = M[x[rs1] + sext(offset)][15:0]
-- LBU : x[rd] = M[x[rs1] + sext(offset)][7:0]
+  LH  : x[rd] = sext(M[x[rs1] + sext(offset)][15:0])
+  LB  : x[rd] = sext(M[x[rs1] + sext(offset)][7:0])
+  LHU : x[rd] = M[x[rs1] + sext(offset)][15:0]
+  LBU : x[rd] = M[x[rs1] + sext(offset)][7:0]
 ```
 
 ### Store 
 ```diff
   SW : M[x[rs1] + sext(offset)] = x[rs2][31:0]
-- SH : M[x[rs1] + sext(offset)] = x[rs2][15:0]
-- SB : M[x[rs1] + sext(offset)] = x[rs2][7:0]
+  SH : M[x[rs1] + sext(offset)] = x[rs2][15:0]
+  SB : M[x[rs1] + sext(offset)] = x[rs2][7:0]
 ```
 
 ### Conditional Branch
