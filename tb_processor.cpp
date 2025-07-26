@@ -25,11 +25,11 @@ void runSimulation(const std::string& filename) {
     
 
     Vprocessor *dut = new Vprocessor;
-    //Verilated::traceEverOn(true);
-    //VerilatedVcdC *m_trace = new VerilatedVcdC;
-    //dut->trace(m_trace,   5);
+    Verilated::traceEverOn(true);
+    VerilatedVcdC *m_trace = new VerilatedVcdC;
+    dut->trace(m_trace,   5);
     
-    //m_trace->open("waveform.vcd");
+    m_trace->open("waveform.vcd");
 
     std::ifstream inputFile(filename);
     std::vector<unsigned int> hexVector;
@@ -94,7 +94,7 @@ void runSimulation(const std::string& filename) {
                 passedTestsFile << filename << std::endl; // Write to passed tests file
                 passedTestsFile << "Last test passed : " << test_no << std::endl;
                 tests_passed ++;
-                // m_trace->dump(sim_time);
+                m_trace->dump(sim_time);
                 sim_time++;
                 break;
             } else {
@@ -104,18 +104,18 @@ void runSimulation(const std::string& filename) {
                 failedTestsFile << "Test failed at: " << test_no << std::endl;
                 std::cout << "Test failed at: " << test_no << std::endl;
                 std::cout << std::endl;
-                // m_trace->dump(sim_time);
+                m_trace->dump(sim_time);
                 sim_time++;
                 break;
 
             }
         }
 
-        //m_trace->dump(sim_time);
+        m_trace->dump(sim_time);
         sim_time++;
     }
 
-    //m_trace->close();
+    m_trace->close();
     delete dut;
 }
 

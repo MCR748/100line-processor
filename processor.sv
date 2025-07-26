@@ -1,41 +1,35 @@
 //`default_nettype none
 
 module processor #(
-  WIDTH = 32, IMEM_DEPTH=512, DMEM_DEPTH=512, NUM_REGS=32, DATA_WIDTH = 8
+  WIDTH = 32, IMEM_DEPTH=512, DMEM_DEPTH=32, NUM_REGS=32, DATA_WIDTH = 8
 ) (
-  input  logic clock, reset, insMemEn,
-  input  logic [WIDTH-1:0] insMemDataIn, insMemAddr,
-  output logic [WIDTH-1:0] gp, a7, a0 //verifying
+  input logic clock, reset, insMemEn,
+  input logic [WIDTH-1: 0] insMemData, 
+  input logic [WIDTH-1: 0]insMemAddr,
+  output logic [WIDTH-1: 0] gp, a7, a0
 );
-  logic [DATA_WIDTH-1:0] dataMemory [DMEM_DEPTH-1:0];
-  logic [DATA_WIDTH-1:0] insMemory  [IMEM_DEPTH-1:0];
-
-  logic [WIDTH-1:0] registers [NUM_REGS  -1:0];
+  logic [DATA_WIDTH-1:0] dataMemory [0 : DMEM_DEPTH-1];
+  logic [WIDTH-1:0] instructionMemory  [0 : IMEM_DEPTH-1];
+  logic [WIDTH-1:0] registers  [0 : NUM_REGS  -1];
   logic [3:0] aluOp;
   logic [4:0] rs1, rs2, rd, opcode;
   logic [2:0] funct3;
   logic [6:0] funct7;
   logic [WIDTH-1:0] ins, imm, pc, data_1, data_2, regDataIn, src1, src2, aluOut, dataMemOut;
-  logic isArithmetic, isImm, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC, isBranchC, regWriteEn;
+  logic isArithmetic, isImm, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC, isBranchR, isBranchC, regWriteEn;
 
   //PC
   always_ff @(posedge clock)
     if (reset) pc <= 0;
-    else       pc <= (isJAL|isJALR|isBranchC) ? aluOut : (pc + 4);
+    else       pc <= (isJAL|isJALR|isBranchR) ? aluOut : {pc[31:2], 2'b00} + 32'd4; //pcPlus4 = {pc[31:2], 2'b00} + 32'd4; 
 
-  //Instruction memory   
-  // initial $readmemh("tests/rv32ui-p-lui.dump.dat", insMemory);
+  //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", instructionMemory);
   always_ff @(posedge clock) 
-    if (insMemEn) begin
-      insMemory[insMemAddr[8:0]] <=     insMemDataIn[7:0];
-      insMemory[insMemAddr[8:0] + 1] <= insMemDataIn[15:8];
-      insMemory[insMemAddr[8:0] + 2] <= insMemDataIn[23:16];
-      insMemory[insMemAddr[8:0] + 3] <= insMemDataIn[31:24];
-    end
+      instructionMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : instructionMemory[insMemAddr[8:0]] ;
 
-  assign ins = insMemEn ? 32'h13 : insMemory[pc[10:2]];
+  assign ins = (~insMemEn) ? instructionMemory[pc[10:2]] : 32'h00000013;
 
-  always_comb begin
+ always_comb begin
     //Instruction decoder
     {funct7, rs2, rs1, funct3, rd, opcode} = ins[31:2];
     
@@ -59,17 +53,9 @@ module processor #(
     else                       imm = 0;
   end
 
-  //Read Registers     
+  //Registry    //initial $readmemh("data/registry.dat", registers);
   assign data_1 = (rs1 == 0) ? 0 : registers[rs1];
   assign data_2 = (rs2 == 0) ? 0 : registers[rs2];
-
-  //Branch decision
-  always_comb case (funct3[2:1])
-    2'b00  : isBranchC = isBranch & (funct3[0] ^ (data_1 == data_2));                  //BNE, BEQ 
-    2'b10  : isBranchC = isBranch & (funct3[0] ^ ($signed(data_1) < $signed(data_2))); //BLT, BGE
-    2'b11  : isBranchC = isBranch & (funct3[0] ^ (data_1 < data_2));                   //BLTU, BGEU
-    default: isBranchC = 1'b0;
-  endcase
 
   //ALU
   localparam [3:0] ADD=0, SLL=1, SLT=2, SLTU=3, XOR=4, SRL=5, OR=6, AND=7, SUB=8, MUL=9, DIV=10, SRA=13, PASS=15;
@@ -102,8 +88,19 @@ module processor #(
     endcase 
   end
 
-  //Data memory
-  // initial $readmemh("data/data.dat",dataMemory);
+
+    //Branch decision
+    always_comb begin : BranchComparator
+        case (funct3[2:1])
+            2'b00: isBranchC = (funct3[0]) ^ (data_1 == data_2);                    //BNE, BEQ 
+            2'b10: isBranchC = (funct3[0]) ^ ($signed(data_1) < $signed(data_2));   //BLT, BGE
+            2'b11: isBranchC = (funct3[0]) ^ (data_1 < data_2);                     //BLTU, BGEU
+            default: isBranchC = 1'b0; 
+        endcase
+      isBranchR = isBranchC & isBranch;
+    end
+  
+  //Data memory    //initial $readmemh("data/data.dat",dataMemory);
   always_ff @(posedge clock) begin : DataMemory
       if (isStoreW) begin
           dataMemory[aluOut]   <= data_2[7:0];
@@ -112,14 +109,16 @@ module processor #(
           dataMemory[aluOut+3] <= data_2[31:24];
       end
   end
+
   assign dataMemOut =  {dataMemory[aluOut+3], dataMemory[aluOut+2], dataMemory[aluOut+1], dataMemory[aluOut]};
 
-  //Writeback Mux
-  assign regData = (isJALR | isJAL) ? pc + 4 : ((isLoadW) ? dataMemOut : aluOut);
+  // Writeback to register bank
+  assign regWriteEn = isArithmetic|isImm|isLoadW|isLoadUI|isJAL|isJALR|isAUIPC;
+  assign regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
 
-  // initial $readmemh("data/registry.dat", registers);
-  always_ff @(posedge clock) 
-    if (regWriteEn) registers[rd] <= regData;
+  always_ff @(posedge clock) //initial $readmemh("data/registry.dat", registers);
+    if (regWriteEn) registers[rd] <= regDataIn;
 
-  assign {gp, a0, a7, dataMemOut} = {registers[3], registers[10], registers[17], dataMemory[aluOut]}; //For verification  
+  //verifying
+  assign {gp, a7, a0} = {registers[3], registers[17], registers[10]}; //For verification 
 endmodule
