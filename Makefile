@@ -36,7 +36,7 @@ waveform_algo.vcd: ./obj_dir/V$(MODULE)_algo
 .stamp.verilate_algo: $(MODULE).sv tb_algo.cpp algorithms/*
 	@echo
 	@echo "### VERILATING ###"
-	verilator -Wall --trace --x-assign unique --x-initial unique -cc $(MODULE).sv --exe tb_algo.cpp
+	verilator -Wall -Wno-lint --trace --x-assign unique --x-initial unique -cc $(MODULE).sv --exe tb_algo.cpp
 	@touch .stamp.verilate_algo
 
 
