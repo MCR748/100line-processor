@@ -1,7 +1,7 @@
 //`default_nettype none
 
 module processor #(
-  WIDTH = 32, IMEM_DEPTH=512, DMEM_DEPTH=32, NUM_REGS=32, DATA_WIDTH = 8
+  WIDTH = 32, IMEM_DEPTH=4096, DMEM_DEPTH=4096, NUM_REGS=32, DATA_WIDTH = 8
 ) (
   input logic clock, reset, insMemEn,
   input logic [WIDTH-1: 0] insMemData, 
@@ -9,7 +9,7 @@ module processor #(
   output logic [WIDTH-1: 0] gp, a7, a0
 );
   logic [DATA_WIDTH-1:0] dataMemory [0 : DMEM_DEPTH-1];
-  logic [WIDTH-1:0] instructionMemory  [0 : IMEM_DEPTH-1];
+  logic [DATA_WIDTH-1:0] instructionMemory  [0 : IMEM_DEPTH-1];
   logic [WIDTH-1:0] registers  [0 : NUM_REGS  -1];
   logic [3:0] aluOp;
   logic [4:0] rs1, rs2, rd, opcode;
@@ -21,13 +21,13 @@ module processor #(
   //PC
   always_ff @(posedge clock)
     if (reset) pc <= 0;
-    else       pc <= (isJAL|isJALR|isBranchR) ? aluOut : {pc[31:2], 2'b00} + 32'd4; //pcPlus4 = {pc[31:2], 2'b00} + 32'd4; 
+    else       pc <= (isJAL|isJALR|isBranchR) ? aluOut : pc + 4;
 
   //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", instructionMemory);
   always_ff @(posedge clock) 
-      instructionMemory[insMemAddr[8:0]] <= (insMemEn) ? insMemData : instructionMemory[insMemAddr[8:0]] ;
+      instructionMemory[insMemAddr[11:0]] <= (insMemEn) ? insMemData[7:0] : instructionMemory[insMemAddr[11:0]] ;
 
-  assign ins = (~insMemEn) ? instructionMemory[pc[10:2]] : 32'h00000013;
+  assign ins = (~insMemEn) ? {instructionMemory[pc+3], instructionMemory[pc+2], instructionMemory[pc+1], instructionMemory[pc]} : 32'h00000013;
 
  always_comb begin
     //Instruction decoder
