@@ -15,8 +15,8 @@ module processor #(
   logic [4:0] rs1, rs2, rd, opcode;
   logic [2:0] funct3;
   logic [6:0] funct7;
-  logic [WIDTH-1:0] ins, imm, pc, data_1, data_2, regDataIn, src1, src2, aluOut, dataMemOut;
-  logic isArithmetic, isImm, isLoadW, isLoadUI, isStoreW, isBranch, isJAL, isJALR, isMUL, isAUIPC, isBranchR, isBranchC, regWriteEn;
+  logic [WIDTH-1:0] ins, imm, pc, data_1, data_2, regDataIn, src1, src2, aluOut, memRead, memWrite;
+  logic isArithmetic, isImm, isMemRead, isLoadUI, isMemWrite, isBranch, isJAL, isJALR, isMUL, isAUIPC, isBranchR, isBranchC, regWriteEn;
 
   //PC
   always_ff @(posedge clock)
@@ -36,21 +36,21 @@ module processor #(
     isArithmetic = (opcode == 5'b01100) & (funct7[0] == 1'b0);
     isMUL        = (opcode == 5'b01100) & (funct7[0] == 1'b1); //For MUL and DIV
     isImm        = (opcode == 5'b00100);
-    isLoadW      = (opcode == 5'b00000);
+    isMemRead    = (opcode == 5'b00000);
     isLoadUI     = (opcode == 5'b01101);
-    isStoreW     = (opcode == 5'b01000);
+    isMemWrite   = (opcode == 5'b01000);
     isBranch     = (opcode == 5'b11000);
     isJAL        = (opcode == 5'b11011);
     isJALR       = (opcode == 5'b11001);
     isAUIPC      = (opcode == 5'b00101);
 
     // Immediate generation
-    if (isImm|isLoadW|isJALR)  imm = WIDTH'($signed( ins[31:20]));                                            //iImm
-    else if (isLoadUI|isAUIPC) imm = {ins[31:12], 12'b0};                                                     //uImm
-    else if (isStoreW)         imm = WIDTH'($signed({ins[31:25], ins[11:7]}));                                //sImm
-    else if (isBranch)         imm = WIDTH'($signed({ins[31]   , ins[7]    , ins[30:25], ins[11:8] , 1'b0})); //sbImm
-    else if (isJAL)            imm = WIDTH'($signed({ins[31]   , ins[19:12], ins[20]   , ins[30:21], 1'b0})); //jImm
-    else                       imm = 0;
+    if (isImm|isMemRead|isJALR)   imm = WIDTH'($signed( ins[31:20]));                                            //iImm
+    else if (isLoadUI|isAUIPC)    imm = {ins[31:12], 12'b0};                                                     //uImm
+    else if (isMemWrite)          imm = WIDTH'($signed({ins[31:25], ins[11:7]}));                                //sImm
+    else if (isBranch)            imm = WIDTH'($signed({ins[31]   , ins[7]    , ins[30:25], ins[11:8] , 1'b0})); //sbImm
+    else if (isJAL)               imm = WIDTH'($signed({ins[31]   , ins[19:12], ins[20]   , ins[30:21], 1'b0})); //jImm
+    else                          imm = 0;
   end
 
   //Registry    //initial $readmemh("data/registry.dat", registers);
@@ -61,14 +61,14 @@ module processor #(
   localparam [3:0] ADD=0, SLL=1, SLT=2, SLTU=3, XOR=4, SRL=5, OR=6, AND=7, SUB=8, MUL=9, DIV=10, SRA=13, PASS=15;
 
   always_comb begin
-    if      (isMUL)                                          aluOp = (funct3[2] ? DIV : MUL);
-    else if (isArithmetic)                                   aluOp = {funct7[5]                   , funct3};
-    else if (isImm)                                          aluOp = {funct7[5] & (funct3==3'b101), funct3};
-    else if (isAUIPC|isJAL|isJALR|isBranch|isLoadW|isStoreW) aluOp = ADD ;   //Can put with load and store
-    else                                                     aluOp = PASS;
+    if      (isMUL)                                               aluOp = (funct3[2] ? DIV : MUL);
+    else if (isArithmetic)                                        aluOp = {funct7[5]                   , funct3};
+    else if (isImm)                                               aluOp = {funct7[5] & (funct3==3'b101), funct3};
+    else if (isAUIPC|isJAL|isJALR|isBranch|isMemRead|isMemWrite)  aluOp = ADD ;   //Can put with load and store
+    else                                                          aluOp = PASS;
 
-    src1 = (isJAL|isBranch|isAUIPC)                                        ? pc  : data_1;
-    src2 = (isImm|isLoadW|isLoadUI|isJAL|isJALR|isStoreW|isBranch|isAUIPC) ? imm : data_2;
+    src1 = (isJAL|isBranch|isAUIPC)                                             ? pc  : data_1;
+    src2 = (isImm|isMemRead|isLoadUI|isJAL|isJALR|isMemWrite|isBranch|isAUIPC)  ? imm : data_2;
 
     unique case (aluOp)
       ADD    : aluOut = src1 + src2;
@@ -88,7 +88,6 @@ module processor #(
     endcase 
   end
 
-
     //Branch decision
     always_comb begin : BranchComparator
         case (funct3[2:1])
@@ -100,21 +99,54 @@ module processor #(
       isBranchR = isBranchC & isBranch;
     end
   
-  //Data memory    //initial $readmemh("data/data.dat",dataMemory);
-  always_ff @(posedge clock) begin : DataMemory
-      if (isStoreW) begin
-          dataMemory[aluOut]   <= data_2[7:0];
-          dataMemory[aluOut+1] <= data_2[15:8];
-          dataMemory[aluOut+2] <= data_2[23:16];
-          dataMemory[aluOut+3] <= data_2[31:24];
+  // Store data assign
+  always_comb begin : MemWriteAssign
+    case (funct3)
+      3'b000: memWrite  = {24'b0,data_2[7:0]};                                      //SB
+      3'b001: memWrite  = {16'b0, data_2[15:8],data_2[7:0]};                        //SHW
+      3'b010: memWrite  = {data_2[31:24], data_2[23:16], data_2[15:8],data_2[7:0]}; //SW
+      default: memWrite = 32'b0;
+    endcase
+  end
+    //Data memory    //initial $readmemh("data/data.dat",dataMemory);
+  always_ff @(posedge clock) begin : DataMemoryUpdate
+      if (isMemWrite) begin
+          case (funct3)
+            3'b000:        //SB                                                                
+              dataMemory[aluOut]   <= memWrite[7:0];
+            3'b001: begin //SHW
+              dataMemory[aluOut]   <= memWrite[7:0];
+              dataMemory[aluOut+1] <= memWrite[15:8];
+            end                                                                   
+            3'b010: begin //SW
+              dataMemory[aluOut]   <= memWrite[7:0];
+              dataMemory[aluOut+1] <= memWrite[15:8];
+              dataMemory[aluOut+2] <= memWrite[23:16];
+              dataMemory[aluOut+3] <= memWrite[31:24];
+            end
+            default: begin
+              dataMemory[aluOut]   <= dataMemory[aluOut];
+              dataMemory[aluOut+1] <= dataMemory[aluOut+1];
+              dataMemory[aluOut+2] <= dataMemory[aluOut+2];
+              dataMemory[aluOut+3] <= dataMemory[aluOut+3];
+            end                                                                  
+          endcase
       end
+    end
+
+  //Read Data
+  always_comb begin : MemRead
+    case (funct3[1:0])
+      2'b00: memRead = (funct3[2]) ? ({{24{dataMemory[aluOut][7]}}, dataMemory[aluOut]}) : ({24'b0, dataMemory[aluOut]});
+      2'b01: memRead = (funct3[2]) ? ({{24{dataMemory[aluOut+1][7]}}, {dataMemory[aluOut+1], dataMemory[aluOut]}}) : ({24'b0, {dataMemory[aluOut+1], dataMemory[aluOut]}});
+      2'b10: memRead = {dataMemory[aluOut+3], dataMemory[aluOut+2], dataMemory[aluOut+1], dataMemory[aluOut]};
+      default: memRead = 32'b0; 
+    endcase
   end
 
-  assign dataMemOut =  {dataMemory[aluOut+3], dataMemory[aluOut+2], dataMemory[aluOut+1], dataMemory[aluOut]};
-
   // Writeback to register bank
-  assign regWriteEn = isArithmetic|isImm|isLoadW|isLoadUI|isJAL|isJALR|isAUIPC;
-  assign regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isLoadW ? dataMemOut : aluOut); //Writeback Mux
+  assign regWriteEn = isArithmetic|isImm|isMemRead|isLoadUI|isJAL|isJALR|isAUIPC;
+  assign regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isMemRead ? memRead : aluOut); //Writeback Mux
 
   always_ff @(posedge clock) //initial $readmemh("data/registry.dat", registers);
     if (regWriteEn) registers[rd] <= regDataIn;
