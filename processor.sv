@@ -1,15 +1,14 @@
 //`default_nettype none
 
 module processor #(
-  WIDTH = 32, IMEM_DEPTH=4096, DMEM_DEPTH=4096, NUM_REGS=32, DATA_WIDTH = 8
+  WIDTH = 32, NUM_REGS=32, DATA_WIDTH = 8, MEM_DEPTH=4096
 ) (
-  input logic clock, reset, insMemEn,
-  input logic [WIDTH-1: 0] insMemData, 
-  input logic [WIDTH-1: 0]insMemAddr,
+  input logic clock, reset, memEn,
+  input logic [WIDTH-1: 0] memData, 
+  input logic [WIDTH-1: 0]memAddr,
   output logic [WIDTH-1: 0] gp, a7, a0
 );
-  logic [DATA_WIDTH-1:0] dataMemory [0 : DMEM_DEPTH-1];
-  logic [DATA_WIDTH-1:0] instructionMemory  [0 : IMEM_DEPTH-1];
+  logic [DATA_WIDTH-1:0] mainMemory [0 : MEM_DEPTH-1];
   logic [WIDTH-1:0] registers  [0 : NUM_REGS  -1];
   logic [3:0] aluOp;
   logic [4:0] rs1, rs2, rd, opcode;
@@ -23,11 +22,11 @@ module processor #(
     if (reset) pc <= 0;
     else       pc <= (isJAL|isJALR|isBranchR) ? aluOut : pc + 4;
 
-  //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", instructionMemory);
+  //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", mainMemory);
   always_ff @(posedge clock) 
-      instructionMemory[insMemAddr[11:0]] <= (insMemEn) ? insMemData[7:0] : instructionMemory[insMemAddr[11:0]] ;
+      mainMemory[memAddr[11:0]] <= (memEn) ? memData[7:0] : mainMemory[memAddr[11:0]] ;
 
-  assign ins = (~insMemEn) ? {instructionMemory[pc+3], instructionMemory[pc+2], instructionMemory[pc+1], instructionMemory[pc]} : 32'h00000013;
+  assign ins = (~memEn) ? {mainMemory[pc+3], mainMemory[pc+2], mainMemory[pc+1], mainMemory[pc]} : 32'h00000013;
 
  always_comb begin
     //Instruction decoder
@@ -108,27 +107,27 @@ module processor #(
       default: memWrite = 32'b0;
     endcase
   end
-    //Data memory    //initial $readmemh("data/data.dat",dataMemory);
+    //Data memory    //initial $readmemh("data/data.dat",mainMemory);
   always_ff @(posedge clock) begin : DataMemoryUpdate
       if (isMemWrite) begin
           case (funct3)
             3'b000:        //SB                                                                
-              dataMemory[aluOut]   <= memWrite[7:0];
+              mainMemory[aluOut]   <= memWrite[7:0];
             3'b001: begin //SHW
-              dataMemory[aluOut]   <= memWrite[7:0];
-              dataMemory[aluOut+1] <= memWrite[15:8];
+              mainMemory[aluOut]   <= memWrite[7:0];
+              mainMemory[aluOut+1] <= memWrite[15:8];
             end                                                                   
             3'b010: begin //SW
-              dataMemory[aluOut]   <= memWrite[7:0];
-              dataMemory[aluOut+1] <= memWrite[15:8];
-              dataMemory[aluOut+2] <= memWrite[23:16];
-              dataMemory[aluOut+3] <= memWrite[31:24];
+              mainMemory[aluOut]   <= memWrite[7:0];
+              mainMemory[aluOut+1] <= memWrite[15:8];
+              mainMemory[aluOut+2] <= memWrite[23:16];
+              mainMemory[aluOut+3] <= memWrite[31:24];
             end
             default: begin
-              dataMemory[aluOut]   <= dataMemory[aluOut];
-              dataMemory[aluOut+1] <= dataMemory[aluOut+1];
-              dataMemory[aluOut+2] <= dataMemory[aluOut+2];
-              dataMemory[aluOut+3] <= dataMemory[aluOut+3];
+              mainMemory[aluOut]   <= mainMemory[aluOut];
+              mainMemory[aluOut+1] <= mainMemory[aluOut+1];
+              mainMemory[aluOut+2] <= mainMemory[aluOut+2];
+              mainMemory[aluOut+3] <= mainMemory[aluOut+3];
             end                                                                  
           endcase
       end
@@ -137,9 +136,9 @@ module processor #(
   //Read Data
   always_comb begin : MemRead
     case (funct3[1:0])
-      2'b00: memRead = (funct3[2]) ? ({{24{dataMemory[aluOut][7]}}, dataMemory[aluOut]}) : ({24'b0, dataMemory[aluOut]});
-      2'b01: memRead = (funct3[2]) ? ({{24{dataMemory[aluOut+1][7]}}, {dataMemory[aluOut+1], dataMemory[aluOut]}}) : ({24'b0, {dataMemory[aluOut+1], dataMemory[aluOut]}});
-      2'b10: memRead = {dataMemory[aluOut+3], dataMemory[aluOut+2], dataMemory[aluOut+1], dataMemory[aluOut]};
+      2'b00: memRead = (funct3[2]) ? ({{24{mainMemory[aluOut][7]}}, mainMemory[aluOut]}) : ({24'b0, mainMemory[aluOut]});
+      2'b01: memRead = (funct3[2]) ? ({{24{mainMemory[aluOut+1][7]}}, {mainMemory[aluOut+1], mainMemory[aluOut]}}) : ({24'b0, {mainMemory[aluOut+1], mainMemory[aluOut]}});
+      2'b10: memRead = {mainMemory[aluOut+3], mainMemory[aluOut+2], mainMemory[aluOut+1], mainMemory[aluOut]};
       default: memRead = 32'b0; 
     endcase
   end
