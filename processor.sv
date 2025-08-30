@@ -81,7 +81,7 @@ module processor #(
       OR     : aluOut = src1 | src2;
       AND    : aluOut = src1 & src2;
       MUL    : aluOut = src1 * src2;
-      DIV    : aluOut = src1 / src2;
+      DIV    : aluOut = ($signed(src2) == 0) ? 32'hFFFFFFFF : (($signed(src1) == 32'h80000000 && $signed(src2) == -1) ? 32'h80000000 : WIDTH'($signed(src1) / $signed(src2)));
       PASS   : aluOut = src2;                                             
       default: aluOut = 0;
     endcase 

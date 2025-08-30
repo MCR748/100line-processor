@@ -30,6 +30,8 @@ tests/rv32ui-p-lw.dat
 Last test passed : 19
 tests/rv32um-p-mul.dat
 Last test passed : 29
+tests/rv32um-p-div.dat
+Last test passed : 10
 tests/rv32ui-p-or.dat
 Last test passed : 27
 tests/rv32ui-p-sll.dat
