@@ -1,4 +1,2 @@
-tests/rv32um-p-mul.dat
-Test failed at: 32
 tests/rv32um-p-div.dat
-Test failed at: 2
+Test failed at: 3

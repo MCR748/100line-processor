@@ -144,7 +144,7 @@ module processor #(
   end
 
   // Writeback to register bank
-  assign regWriteEn = isArithmetic|isImm|isMemRead|isLoadUI|isJAL|isJALR|isAUIPC;
+  assign regWriteEn = isArithmetic|isImm|isMemRead|isLoadUI|isJAL|isJALR|isAUIPC|isMUL;
   assign regDataIn  = (isJALR|isJAL) ? (pc + 4) : (isMemRead ? memRead : aluOut); //Writeback Mux
 
   always_ff @(posedge clock) //initial $readmemh("data/registry.dat", registers);
