@@ -18,10 +18,11 @@ std::ofstream failedTestsFile("results/failed_tests.txt");
 int tests_passed = 0;
 
 void runSimulation(const std::string& filename) {
-    #define MAX_SIM_TIME   1000
+    #define MAX_SIM_TIME   3000
     vluint64_t sim_time =   0;
     vluint64_t posedge_cnt =   0;
     int test_no = 1;
+    bool is_timeout = true;
     
 
     Vprocessor *dut = new Vprocessor;
@@ -96,6 +97,7 @@ void runSimulation(const std::string& filename) {
                 tests_passed ++;
                 m_trace->dump(sim_time);
                 sim_time++;
+                is_timeout = false;
                 break;
             } else {
                 std::cout << "Test for file " << filename << " failed" << std::endl;
@@ -106,6 +108,8 @@ void runSimulation(const std::string& filename) {
                 std::cout << std::endl;
                 m_trace->dump(sim_time);
                 sim_time++;
+                is_timeout = false;
+
                 break;
 
             }
@@ -113,6 +117,18 @@ void runSimulation(const std::string& filename) {
 
         m_trace->dump(sim_time);
         sim_time++;
+    } 
+    if(is_timeout) {
+            std::cout << "Test for file " << filename << " timeout" << std::endl;
+            failedTestsFile << filename << std::endl; // Write to failed tests file
+            test_no = dut->gp >> 1;
+            failedTestsFile << "Test timed out at: " << test_no << std::endl;
+            std::cout << "Test timed out at: " << test_no << std::endl;
+            std::cout << std::endl;
+            std::cout << "Time Out" << std::endl;
+            std::cout << std::endl;
+            m_trace->dump(sim_time);
+            sim_time++;
     }
 
     m_trace->close();

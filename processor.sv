@@ -1,7 +1,7 @@
 //`default_nettype none
 
 module processor #(
-  WIDTH = 32, NUM_REGS=32, DATA_WIDTH = 8, MEM_DEPTH=4096
+  WIDTH = 32, NUM_REGS=32, DATA_WIDTH = 8, MEM_DEPTH=16384
 ) (
   input logic clock, reset, memEn,
   input logic [WIDTH-1: 0] memData, 
@@ -24,7 +24,7 @@ module processor #(
 
   //Instruction memory    //initial $readmemh("tests/rv32ui-p-lui.dump.dat", mainMemory);
   always_ff @(posedge clock) 
-      mainMemory[memAddr[11:0]] <= (memEn) ? memData[7:0] : mainMemory[memAddr[11:0]] ;
+      mainMemory[memAddr[13:0]] <= (memEn) ? memData[7:0] : mainMemory[memAddr[13:0]] ;
 
   assign ins = (~memEn) ? {mainMemory[pc+3], mainMemory[pc+2], mainMemory[pc+1], mainMemory[pc]} : 32'h00000013;
 
@@ -136,10 +136,10 @@ module processor #(
   //Read Data
   always_comb begin : MemRead
     case (funct3[1:0])
-      2'b00: memRead = (funct3[2]) ? ({{24{mainMemory[aluOut][7]}}, mainMemory[aluOut]}) : ({24'b0, mainMemory[aluOut]});
-      2'b01: memRead = (funct3[2]) ? ({{24{mainMemory[aluOut+1][7]}}, {mainMemory[aluOut+1], mainMemory[aluOut]}}) : ({24'b0, {mainMemory[aluOut+1], mainMemory[aluOut]}});
+      2'b00: memRead = (!funct3[2]) ? ({{24{mainMemory[aluOut][7]}}, mainMemory[aluOut]}) : ({24'b0, mainMemory[aluOut]});
+      2'b01: memRead = (!funct3[2]) ? ({{16{mainMemory[aluOut+1][7]}}, {mainMemory[aluOut+1], mainMemory[aluOut]}}) : ({16'b0, {mainMemory[aluOut+1], mainMemory[aluOut]}});
       2'b10: memRead = {mainMemory[aluOut+3], mainMemory[aluOut+2], mainMemory[aluOut+1], mainMemory[aluOut]};
-      default: memRead = 32'b0; 
+      default: memRead = 32'b0;
     endcase
   end
 
