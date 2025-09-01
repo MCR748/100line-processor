@@ -7,7 +7,7 @@ tests: waveform_tests.vcd
 algo: waveform_algo.vcd
 
 .PHONY:prog
-prog: waveform_prog.vcd
+prog: waveform_prog.vcd runsw
 
 waveform_tests.vcd: ./obj_dir/V$(MODULE)_tests
 	@echo
@@ -48,7 +48,7 @@ waveform_prog.vcd: ./obj_dir/V$(MODULE)_prog
 	@echo "### SIMULATING ###"
 	@./obj_dir/V$(MODULE) +verilator+rand+reset+2
 
-./obj_dir/V$(MODULE)_prog: .stamp.verilate_prog
+./obj_dir/V$(MODULE)_prog: .stamp.verilate_prog riscv_prog
 	@echo
 	@echo "### BUILDING SIM ###"
 	make -C obj_dir -f V$(MODULE).mk V$(MODULE)
@@ -59,6 +59,21 @@ waveform_prog.vcd: ./obj_dir/V$(MODULE)_prog
 	verilator -Wall --trace --x-assign unique --x-initial unique -Wno-UNUSED -Wno-style -cc $(MODULE).sv --exe tb_prog.cpp
 	@touch .stamp.verilate_prog
 
+.PHONY: riscv_prog
+riscv_prog: 
+	@echo
+	@echo "### BUILDING PROGRAM ###"
+	$(MAKE) -C prog clean
+	$(MAKE) -C prog 
+
+.PHONY: runsw
+runsw: sw_main
+	@echo
+	@echo "### RUNNING SW PROGRAM ###"
+	./sw_main
+
+sw_main: sw_main.cpp user_code/user_func.h
+	g++ -Iuser_code sw_main.cpp -o sw_main
 
 .PHONY: clean
 clean:
