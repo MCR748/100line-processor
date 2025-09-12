@@ -10,6 +10,7 @@
 #define MAX_IO_SIZE 256 >> 2
 
 int readData(std::string filename, std::vector<int> &data);
+int writeData(std::string filename, const int *dout, int numOutputs);
 
 int main() {
     
@@ -28,6 +29,8 @@ int main() {
     std::vector<int> sim_output_data;
     status = readData("iofiles/output.txt", sim_output_data);
     if (status != 0) return 0;
+
+    writeData("iofiles/sw_output.txt", dout, num_outputs);
 
     bool matched = true;
     for (int i = 0; i < num_outputs; i++) {
@@ -76,6 +79,21 @@ int readData(std::string filename, std::vector<int> &data) {
     //     std::cout << b << " ";
     // }
     // std::cout << std::endl;
+
+    return 0;
+}
+
+int writeData(std::string filename, const int *dout, int num_outputs) {
+
+    std::ofstream file(filename);
+    if (!file) {
+        std::cerr << "Failed to open file\n";
+        return -1;
+    }
+
+    for (int i = 0; i < num_outputs; i++) {
+        file << dout[i] << "\n";
+    }
 
     return 0;
 }

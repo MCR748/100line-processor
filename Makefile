@@ -64,6 +64,7 @@ riscv_prog:
 	@echo
 	@echo "### BUILDING PROGRAM ###"
 	$(MAKE) -C prog 
+	$(MAKE) -C prog dump
 
 .PHONY: runsw
 runsw: sw_main
