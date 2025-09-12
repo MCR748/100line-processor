@@ -20,7 +20,7 @@ LDS = sections.lds
 all: $(MEM)
 
 # Step 1: generate assembly from C (optional)
-program.S: program.c
+program.S: program.c ../user_code/user_func.h
 	riscv32-unknown-elf-gcc -S -march=rv32i -mabi=ilp32 -I../user_code -o program.S program.c
 
 # Step 2: assemble all .S files

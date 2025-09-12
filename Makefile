@@ -53,7 +53,7 @@ waveform_prog.vcd: ./obj_dir/V$(MODULE)_prog
 	@echo "### BUILDING SIM ###"
 	make -C obj_dir -f V$(MODULE).mk V$(MODULE)
 
-.stamp.verilate_prog: $(MODULE).sv tb_prog.cpp prog/*
+.stamp.verilate_prog: $(MODULE).sv tb_prog.cpp 
 	@echo
 	@echo "### VERILATING ###"
 	verilator -Wall --trace --x-assign unique --x-initial unique -Wno-UNUSED -Wno-style -cc $(MODULE).sv --exe tb_prog.cpp
@@ -63,7 +63,6 @@ waveform_prog.vcd: ./obj_dir/V$(MODULE)_prog
 riscv_prog: 
 	@echo
 	@echo "### BUILDING PROGRAM ###"
-	$(MAKE) -C prog clean
 	$(MAKE) -C prog 
 
 .PHONY: runsw
