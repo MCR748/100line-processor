@@ -20,7 +20,8 @@ int main() {
     int *din = input_data.data();
     int dout[MAX_IO_SIZE] = {0};
 
-    user_func(din, dout);
+    int num_outputs = user_func(din, dout);
+    num_outputs = (num_outputs > MAX_IO_SIZE) ? MAX_IO_SIZE : num_outputs;
 
     std::cout << "Function output: " << dout[0] << std::endl;
 
@@ -29,7 +30,7 @@ int main() {
     if (status != 0) return 0;
 
     bool matched = true;
-    for (int i = 0; i < MAX_IO_SIZE; i++) {
+    for (int i = 0; i < num_outputs; i++) {
         if (dout[i] != sim_output_data[i]) {
             std::cout << "Mismatched output: sim " << sim_output_data[i] << ", sw " << dout[i] << std::endl;
             matched = false;

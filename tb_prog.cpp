@@ -17,7 +17,7 @@
 
 int readProgram(std::string filename, std::vector<unsigned int> &hexVector);
 int readInputData(std::string filename, std::vector<uint8_t> &inputBytes);
-int writeOutputData(std::string filename, const uint8_t *outputBytes);
+int writeOutputData(std::string filename, const uint8_t *outputBytes, int numOutputs);
 
 enum State {
   INIT,
@@ -119,8 +119,13 @@ int main(int argc, char** argv, char** env) {
         //Simulation body
         if (sim_state == RUN && dut->processor__DOT__pc == 0x14) {  // Program halt
 
+            // Get output bytes from memory
             const uint8_t *outputBytes = reinterpret_cast<const uint8_t*>(&dut->processor__DOT__mainMemory[DOUT_ADDR]);
-            writeOutputData("iofiles/output.txt", outputBytes);
+
+            // Get number of outputs
+            int numOutputs = dut->a0;
+
+            writeOutputData("iofiles/output.txt", outputBytes, numOutputs);
 
             int din = *reinterpret_cast<const int32_t*>(&dut->processor__DOT__mainMemory[DIN_ADDR]);
             int dout = *reinterpret_cast<const int32_t*>(&dut->processor__DOT__mainMemory[DOUT_ADDR]);
@@ -225,7 +230,7 @@ int readInputData(std::string filename, std::vector<uint8_t> &inputBytes) {
     return 0;
 }
 
-int writeOutputData(std::string filename, const uint8_t *outputBytes) {
+int writeOutputData(std::string filename, const uint8_t *outputBytes, int numOutputs) {
 
     std::ofstream file(filename);
     if (!file) {
@@ -233,7 +238,10 @@ int writeOutputData(std::string filename, const uint8_t *outputBytes) {
         return -1;
     }
 
-    for (int i = 0; i < MAX_IO_SIZE; i+=4) {
+    numOutputs *= 4;    // Convert to bytes
+    numOutputs = (numOutputs > MAX_IO_SIZE) ? MAX_IO_SIZE : numOutputs;
+
+    for (int i = 0; i < numOutputs; i+=4) {
         int32_t value = *reinterpret_cast<const int32_t*>(outputBytes + i);
         file << value << "\n";
     }
