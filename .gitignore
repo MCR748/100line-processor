@@ -1,7 +1,7 @@
 .vscode/
 obj_dir/
 results/*
-.stamp.verilate*
+.stamp.*
 *.vcd
 
 prog/program.bin

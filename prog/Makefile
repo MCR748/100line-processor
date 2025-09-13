@@ -16,12 +16,16 @@ MEM = $(BASE).txt
 # Linker script
 LDS = sections.lds
 
+DEFINES ?= -DALGO_PRIMES
+
+# Algo
+
 # Default target: build everything
 all: $(MEM)
 
 # Step 1: generate assembly from C (optional)
-program.S: program.c ../user_code/*
-	riscv32-unknown-elf-gcc -S -march=rv32i -mabi=ilp32 -I../user_code -o program.S program.c
+program.S: program.c ../user_code/* ../.stamp.algos
+	riscv32-unknown-elf-gcc -S -march=rv32i -mabi=ilp32 -I../user_code $(DEFINES) -o program.S program.c
 
 # Step 2: assemble all .S files
 start.o: start.S

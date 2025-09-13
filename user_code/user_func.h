@@ -1,5 +1,4 @@
-
-#include "example_funcs.h"
+#include "algos.h"
 
 int user_func(int* din, int* dout) {
 
@@ -10,10 +9,8 @@ int user_func(int* din, int* dout) {
     // *dout = out;
 
     // Functions with a returned array
-    first_n_fibonacci(n, dout);
+    int num_outputs = algorithm(n, dout);
 
     // Return the number of outputs of the function
-    int num_outputs = n + 1;
-
     return num_outputs;
 }
