@@ -43,11 +43,11 @@ int main() {
 
     if (matched) {
         std::cout << "PASS: Software and simulation outputs match\n";
+        return 0;
     } else {
         std::cout << "FAIL: mismatched software and simulation outputs\n";
+        return 1;
     }
-
-    return 0;
 }
 
 
