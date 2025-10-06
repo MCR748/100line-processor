@@ -4,6 +4,8 @@ int user_func(int* din, int* dout) {
 
     int n = *din;
     
+    // --- Write your algorithm here ---
+
     // Functions with a single returned output
     // int out = fibonacci(n);
     // *dout = out;

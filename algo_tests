@@ -6,7 +6,7 @@
 > results/algo_failed_tests.txt
 
 # Names of the algorithms
-ALGOS=("FIBONACCI" "PASCAL" "PRIMES")
+ALGOS=("FIBONACCI" "PRIMES" "PASCAL")
 
 # Counters
 pass_count=0
@@ -15,7 +15,7 @@ fail_count=0
 make clean
 
 for algo in "${ALGOS[@]}"; do
-    define_flag="-DALGO_${algo}"
+    define_flag="-DALGO_${algo} -DALGO_TESTS"
 
     echo
     echo "=== Running test $algo ==="

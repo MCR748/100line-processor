@@ -1,3 +1,5 @@
+#ifndef ALGOS_H
+#define ALGOS_H
 
 int algorithm(int n, int* output);
 
@@ -56,5 +58,7 @@ int algorithm(int n, int* output) {
 
     return count;
 }
+
+#endif
 
 #endif

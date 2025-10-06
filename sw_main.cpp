@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "user_func.h"
+#include "algos.h"
 
 #define MAX_IO_SIZE 256 >> 2
 
@@ -20,8 +21,15 @@ int main() {
 
     int *din = input_data.data();
     int dout[MAX_IO_SIZE] = {0};
+    int num_outputs;
 
-    int num_outputs = user_func(din, dout);
+#if defined(ALGO_TESTS)
+    int n = *din;
+    num_outputs = algorithm(n, dout);
+#else
+    num_outputs = user_func(din, dout);
+#endif
+
     num_outputs = (num_outputs > MAX_IO_SIZE) ? MAX_IO_SIZE : num_outputs;
 
     std::cout << "Function output: " << dout[0] << std::endl;
