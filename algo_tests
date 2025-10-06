@@ -6,7 +6,7 @@
 > results/algo_failed_tests.txt
 
 # Names of the algorithms
-ALGOS=("FIBONACCI" "PRIMES" "PASCAL")
+ALGOS=("FIBONACCI" "PRIMES" "QUICKSORT" "PASCAL")
 
 # Counters
 pass_count=0

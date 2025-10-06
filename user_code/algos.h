@@ -1,13 +1,13 @@
 #ifndef ALGOS_H
 #define ALGOS_H
 
-int algorithm(int* din, int* output);
+int algorithm(int* input, int* output);
 
 #if defined(ALGO_FIBONACCI)
 
-int algorithm(int* din, int* output) {
+int algorithm(int* input, int* output) {
     // Return first n fibonacci numbers
-    int n = *din;
+    int n = *input;
 
     output[0] = 0;
     output[1] = 1;
@@ -21,9 +21,9 @@ int algorithm(int* din, int* output) {
 
 #elif defined(ALGO_PASCAL)
 
-int algorithm(int* din, int* output) {
+int algorithm(int* input, int* output) {
     // Returns nth row of the triangle
-    int n = *din;
+    int n = *input;
 
     output[0] = 1;  // 0th row
     
@@ -42,9 +42,9 @@ int algorithm(int* din, int* output) {
 
 #elif defined(ALGO_PRIMES)
 
-int algorithm(int* din, int* output) {
+int algorithm(int* input, int* output) {
     // Returns prime numbers below n using the sieve of erastothenes
-    int n = *din;
+    int n = *input;
 
     int primesieve[n+1];
     int count = 0;
@@ -60,6 +60,50 @@ int algorithm(int* din, int* output) {
     }
 
     return count;
+}
+
+#elif defined(ALGO_QUICKSORT)
+
+void quicksort(int* arr, int low, int high) {
+
+    int i, j, tmp;
+
+    if (low < high) {
+        // Partition array
+        int pivot = arr[high];
+        i = low - 1;
+
+        for (j = low; j <= high; j++) {
+            if (arr[j] <= pivot) {   // Swap
+                i++;
+                tmp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = tmp;
+            }
+        }
+
+        // Recursive calls for each partition
+        quicksort(arr, low, i-1);
+        quicksort(arr, i+1, high);
+    }
+}
+
+int algorithm(int* input, int* output) {
+    // Quicksort on the given input
+
+    // Take first input as size of array
+    int n = input[0];
+    int i, j;
+
+    // Copy inputs to output array
+    for (i = 1; i <= n; i++) {
+        output[i-1] = input[i];
+    }
+    
+    // Run quicksort
+    quicksort(output, 0, n-1);
+
+    return n;
 }
 
 #endif
