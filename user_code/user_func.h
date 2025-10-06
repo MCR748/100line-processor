@@ -1,8 +1,6 @@
 #include "algos.h"
 
 int user_func(int* din, int* dout) {
-
-    int n = *din;
     
     // --- Write your algorithm here ---
 
@@ -11,7 +9,7 @@ int user_func(int* din, int* dout) {
     // *dout = out;
 
     // Functions with a returned array
-    int num_outputs = algorithm(n, dout);
+    int num_outputs = algorithm(din, dout);
 
     // Return the number of outputs of the function
     return num_outputs;

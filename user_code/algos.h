@@ -1,12 +1,13 @@
 #ifndef ALGOS_H
 #define ALGOS_H
 
-int algorithm(int n, int* output);
+int algorithm(int* din, int* output);
 
 #if defined(ALGO_FIBONACCI)
 
-int algorithm(int n, int* output) {
+int algorithm(int* din, int* output) {
     // Return first n fibonacci numbers
+    int n = *din;
 
     output[0] = 0;
     output[1] = 1;
@@ -20,8 +21,9 @@ int algorithm(int n, int* output) {
 
 #elif defined(ALGO_PASCAL)
 
-int algorithm(int n, int* output) {
+int algorithm(int* din, int* output) {
     // Returns nth row of the triangle
+    int n = *din;
 
     output[0] = 1;  // 0th row
     
@@ -40,8 +42,9 @@ int algorithm(int n, int* output) {
 
 #elif defined(ALGO_PRIMES)
 
-int algorithm(int n, int* output) {
+int algorithm(int* din, int* output) {
     // Returns prime numbers below n using the sieve of erastothenes
+    int n = *din;
 
     int primesieve[n+1];
     int count = 0;

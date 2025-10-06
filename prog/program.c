@@ -11,8 +11,7 @@ int main() {
     int num_outputs;
     
 #if defined(ALGO_TESTS)
-    int n = *din;
-    num_outputs = algorithm(n, dout);
+    num_outputs = algorithm(din, dout);
 #else
     num_outputs = user_func(din, dout);
 #endif
