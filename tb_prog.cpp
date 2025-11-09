@@ -7,6 +7,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vprocessor.h"
+#include "Vprocessor__Syms.h"       // gives full definition of rootp
 
 // Change simulation time to number of cycles required
 #define MAX_SIM_TIME 100000
@@ -117,18 +118,18 @@ int main(int argc, char** argv, char** env) {
 
         //Add any checks here for output
         //Simulation body
-        if (sim_state == RUN && dut->processor__DOT__pc == 0x14) {  // Program halt
+        if (sim_state == RUN && dut->rootp->processor__DOT__pc == 0x14) {  // Program halt
 
             // Get output bytes from memory
-            const uint8_t *outputBytes = reinterpret_cast<const uint8_t*>(&dut->processor__DOT__mainMemory[DOUT_ADDR]);
+            const uint8_t *outputBytes = reinterpret_cast<const uint8_t*>(&dut->rootp->processor__DOT__mainMemory[DOUT_ADDR]);
 
             // Get number of outputs
             int numOutputs = dut->a0;
 
             writeOutputData("iofiles/output.txt", outputBytes, numOutputs);
 
-            int din = *reinterpret_cast<const int32_t*>(&dut->processor__DOT__mainMemory[DIN_ADDR]);
-            int dout = *reinterpret_cast<const int32_t*>(&dut->processor__DOT__mainMemory[DOUT_ADDR]);
+            int din = *reinterpret_cast<const int32_t*>(&dut->rootp->processor__DOT__mainMemory[DIN_ADDR]);
+            int dout = *reinterpret_cast<const int32_t*>(&dut->rootp->processor__DOT__mainMemory[DOUT_ADDR]);
             std::cout << "t=" << sim_time << " Program input: " << din << " Program output: " << dout << std::endl;
             std::cout << "Return code: " << dut->a0 << std::endl;
             is_timeout = false;
