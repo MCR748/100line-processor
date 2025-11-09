@@ -12,3 +12,6 @@ prog/program.dump
 prog/start.o
 
 sw_main
+
+riscv/
+riscv-toolchain.tar.gz

@@ -1,5 +1,5 @@
 # Set RISCV toolchain path
-export PATH := /home/anuki/comparch/riscv/bin:$(PATH)
+export PATH := $(abspath $(CURDIR)/../riscv/bin):$(PATH)
 
 # Sources
 C_SRC = program.c
