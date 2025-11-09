@@ -33,5 +33,25 @@ jobs:
     - name: Run all standard simulation
       run: make tests
 
+    ## Steps for running programs
+
+    - name: Cache RISC-V Toolchain
+      id: cache-riscv
+      uses: actions/cache@v4
+      with:
+        path: riscv
+        key: riscv-toolchain-v1
+
+    - name: Download and extract RISC-V toolchain (if not cached)
+      if: steps.cache-riscv.outputs.cache-hit != 'true'
+      run: |
+        echo "Downloading prebuilt toolchain..."
+        wget https://github.com/MCR748/100line-processor/releases/download/riscv-toolchain/riscv-toolchain.tar.gz
+        tar -xzf riscv-toolchain.tar.gz 
+        rm riscv-toolchain.tar.gz
+
+    - name: Verify toolchain installation
+      run: riscv32-unknown-elf-gcc --version
+
     # - name: Run all algorithms
     #   run: make algo
