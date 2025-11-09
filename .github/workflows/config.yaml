@@ -50,8 +50,5 @@ jobs:
         tar -xzf riscv-toolchain.tar.gz 
         rm riscv-toolchain.tar.gz
 
-    - name: Verify toolchain installation
-      run: riscv32-unknown-elf-gcc --version
-
-    # - name: Run all algorithms
-    #   run: make algo
+    - name: Run all algorithm tests
+      run: ./algo_tests
