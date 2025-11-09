@@ -39,3 +39,10 @@ echo "=================================="
 echo "Total tests: ${#ALGOS[@]}"
 echo "Passed: $pass_count"
 echo "Failed: $fail_count"
+
+# Exit with error if there are any failed tests
+if (( fail_count > 0 )); then
+    exit 1
+else
+    exit 0
+fi
