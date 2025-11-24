@@ -47,20 +47,20 @@ waveform_algo.vcd: ./obj_dir/V$(MODULE)_algo
 	@touch .stamp.verilate_algo
 
 
-waveform_prog.vcd: ./obj_dir/V$(MODULE)_prog
+waveform_prog.vcd: .stamp.verilate_prog ./obj_dir/Vtb_prog riscv_prog
 	@echo
 	@echo "### SIMULATING ###"
-	@./obj_dir/V$(MODULE) +verilator+rand+reset+2
+	@./obj_dir/Vtb_prog 
 
-./obj_dir/V$(MODULE)_prog: .stamp.verilate_prog riscv_prog
-	@echo
-	@echo "### BUILDING SIM ###"
-	make -C obj_dir -f V$(MODULE).mk V$(MODULE)
+# ./obj_dir/Vtb_prog: .stamp.verilate_prog riscv_prog
+# 	@echo
+# 	@echo "### BUILDING SIM ###"
+# 	make -C obj_dir -f Vtb_prog.mk Vtb_prog
 
-.stamp.verilate_prog: $(MODULE).sv tb_prog.cpp 
+.stamp.verilate_prog: $(MODULE).sv tb_prog.sv 
 	@echo
 	@echo "### VERILATING ###"
-	verilator -Wall --trace --x-assign unique --x-initial unique -Wno-UNUSED -Wno-style -cc $(MODULE).sv --exe tb_prog.cpp
+	verilator -Wall --trace --x-assign unique --x-initial unique -Wno-UNUSED -Wno-style --timing --cc --binary tb_prog.sv $(MODULE).sv
 	@touch .stamp.verilate_prog
 
 .PHONY: algo_define
