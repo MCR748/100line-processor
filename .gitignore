@@ -9,6 +9,7 @@ prog/program.elf
 prog/program.o 
 prog/program.S 
 prog/program.dump
+prog/program.txt
 prog/start.o
 
 sw_main
