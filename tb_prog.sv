@@ -7,6 +7,11 @@ module tb_prog;
     localparam DOUT_ADDR = 'h3F00;
     localparam MAX_IO_SIZE = 256;   // Bytes
 
+    localparam WIDTH = 32; 
+    localparam NUM_REGS = 32;
+    localparam DATA_WIDTH = 8;
+    localparam MEM_DEPTH = 16384;
+
     enum logic [2:0] {
         INIT,
         SEND_INST,
@@ -117,10 +122,10 @@ module tb_prog;
 
     // DUT instantiation
     processor #(
-        .WIDTH(32),
-        .NUM_REGS(32),
-        .DATA_WIDTH(8),
-        .MEM_DEPTH(16384)
+        .WIDTH(WIDTH),
+        .NUM_REGS(NUM_REGS),
+        .DATA_WIDTH(DATA_WIDTH),
+        .MEM_DEPTH(MEM_DEPTH)
     ) dut (.*);
 
     initial begin
@@ -143,11 +148,11 @@ module tb_prog;
                 INIT: sim_state = SEND_DATA;
 
                 SEND_DATA: begin
-                    $display("t=%d Loaded %d\n", sim_time, data_idx);
                     memData[7:0] = inputBytes[data_idx];
                     memAddr = DIN_ADDR + data_idx;
                     memEn = 1;
                     data_idx = data_idx + 1;
+                    $display("t=%d Loaded %x", sim_time, memData[7:0]);
 
                     if (data_idx == inputSize || data_idx == MAX_IO_SIZE) begin
                         data_idx = 0;
@@ -156,7 +161,7 @@ module tb_prog;
                 end
 
                 RESET: begin
-                    $display("t=%d Reset\n", sim_time);
+                    $display("t=%d Reset", sim_time);
                     reset = 1;
                     memData = 0;
                     memAddr = 0;
