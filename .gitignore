@@ -16,3 +16,6 @@ sw_main
 
 riscv/
 riscv-toolchain.tar.gz
+
+iofiles/output.txt
+iofiles/sw_output.txt
