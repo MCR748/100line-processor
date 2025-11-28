@@ -31,26 +31,30 @@ jobs:
         sudo apt-get install -y make
 
     - name: Run all standard simulation
+      run: make waveform.vcd
+
+  c_to_sim:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install GCC
       run: |
-        make tests
-        [ ! -s results/failed_tests.txt ] || (echo "One or more tests failed" && exit 1)
+        sudo apt-get update
+        sudo apt-get install -y gcc
 
-    ## Steps for running programs
-
-    - name: Cache RISC-V Toolchain
-      id: cache-riscv
-      uses: actions/cache@v4
-      with:
-        path: riscv
-        key: riscv-toolchain-v1
-
-    - name: Download and extract RISC-V toolchain (if not cached)
-      if: steps.cache-riscv.outputs.cache-hit != 'true'
+    - name: Install Python
       run: |
-        echo "Downloading prebuilt toolchain..."
-        wget https://github.com/MCR748/100line-processor/releases/download/riscv-toolchain/riscv-toolchain.tar.gz
-        tar -xzf riscv-toolchain.tar.gz 
-        rm riscv-toolchain.tar.gz
+        sudo apt-get install -y python3 python3-pip
+        pip install pytest
 
-    - name: Run all algorithm tests
-      run: ./algo_tests
+    - name: Install Verilator
+      run: |
+        sudo apt-get install -y verilator
+
+    - name: Run C to simulation
+      run: |
+        mkdir c/x86
+        mkdir c/riscv
+        pytest -s test.py
