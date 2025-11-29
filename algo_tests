@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Clear result files
+# Clear previous results
+> results/algo_passed_tests.txt
+> results/algo_failed_tests.txt
+
+# Names of the algorithms
+ALGOS=("FIBONACCI" "PRIMES" "QUICKSORT" "PASCAL")
+
+# Counters
+pass_count=0
+fail_count=0
+
+make clean
+
+for algo in "${ALGOS[@]}"; do
+    define_flag="-DALGO_${algo} -DALGO_TESTS"
+
+    echo
+    echo "=== Running test $algo ==="
+
+    # Copy the correct input file
+    cp iofiles/algo_test_inputs/${algo}.txt iofiles/input.txt
+    
+    if make prog DEFINES="$define_flag"; then
+        echo "$algo" >> results/algo_passed_tests.txt
+        ((pass_count++))
+        echo "$algo: PASS"
+    else
+        echo "$algo" >> results/algo_failed_tests.txt
+        ((fail_count++))
+        echo "$algo: FAIL"
+    fi
+done
+
+echo
+echo "=================================="
+echo "Total tests: ${#ALGOS[@]}"
+echo "Passed: $pass_count"
+echo "Failed: $fail_count"
+
+# Exit with error if there are any failed tests
+if (( fail_count > 0 )); then
+    exit 1
+else
+    exit 0
+fi
