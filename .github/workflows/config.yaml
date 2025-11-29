@@ -31,8 +31,10 @@ jobs:
         sudo apt-get install -y make
 
     - name: Run all standard simulation
-      run: make tests
+      run: |
+        make tests
         [ ! -s results/failed_tests.txt ] || (echo "One or more tests failed" && exit 1)
+
 
   c_to_sim:
     runs-on: ubuntu-latest
