@@ -1,5 +1,5 @@
 # 100line-processor
-A RV32I processor written to support a choosen set of instructions.
+A RV32I processor written to support a chosen set of instructions.
 
 ## Supported Instructions
 
